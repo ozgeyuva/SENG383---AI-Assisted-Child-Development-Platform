@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/seed.js",
+    "start": "node src/server.js"
   },
   "keywords": [],
   "author": "",
