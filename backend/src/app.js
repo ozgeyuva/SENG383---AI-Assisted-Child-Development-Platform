@@ -1,11 +1,11 @@
 const express = require('express');
 const { createAuthRouter } = require('./routes/auth');
 
-function createApp(db) {
+function createApp(db, options = {}) {
     const app = express();
 
     app.use(express.json( { limit: '16kb'}));
-    app.use('/api/auth', createAuthRouter(db));
+    app.use('/api/auth', createAuthRouter(db, options));
     app.use((error, req, res, next) => {
         if (error.type === 'entity.parse.failed') {
             return res.status(400).json({ error: 'Invalid JSON data' });

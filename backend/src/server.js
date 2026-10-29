@@ -12,7 +12,7 @@ const db = createDatabase(
     path.join(dataDirectory, 'lumi.sqlite')
 );
 
-const app = createApp(db);
+const app = createApp(db, { jwtSecret: process.env.JWT_SECRET });
 const port = process.env.PORT || 3000;
 
 const server = app.listen(port, '127.0.0.1', () => {
