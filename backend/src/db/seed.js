@@ -46,6 +46,37 @@ function seedUser(db) {
     seed();
 }
 
+function seedChildren(db) {
+    const seed = db.transaction(() => {
+        const parent = db.prepare(`
+            SELECT id FROM users
+            WHERE email = ? AND role = 'parent'
+        `).get('parent@example.test');
+
+        if (!parent) {
+            throw new Error('Run seedUser before seedChildren.');
+        }
+
+        db.prepare(`
+            INSERT INTO children (
+                parent_id, first_name, last_name, date_of_birth, grade
+            )
+            SELECT ?, ?, ?, ?, ?
+            WHERE NOT EXISTS (
+                SELECT 1 FROM children
+                WHERE parent_id = ?
+                  AND first_name = ?
+                  AND last_name = ?
+                  AND date_of_birth = ?
+            )
+        `).run(
+            parent.id, 'Deniz', 'Demo', '2017-05-10', '4',
+            parent.id, 'Deniz', 'Demo', '2017-05-10'
+        );
+    });
+
+    seed();
+}
 if (require.main === module) {
     const dataDirectory = path.join(__dirname, '..', '..', 'data');
     fs.mkdirSync(dataDirectory, { recursive: true });
@@ -53,11 +84,19 @@ if (require.main === module) {
     const db = createDatabase(path.join(dataDirectory, 'lumi.sqlite'));
 
     try {
-        seedUser(db);
-        console.table(db.prepare('SELECT id, email, role FROM users').all());
-    } finally {
-        db.close();
-    }
+    seedUser(db);
+    seedChildren(db);
+
+    console.table(
+        db.prepare('SELECT id, email, role FROM users').all()
+    );
+
+    console.table(
+        db.prepare('SELECT * FROM children').all()
+    );
+} finally {
+    db.close();
+}
 }
 
-module.exports = { seedUser };  
+module.exports = { seedUser, seedChildren };
