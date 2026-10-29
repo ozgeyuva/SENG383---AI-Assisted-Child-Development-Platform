@@ -8,15 +8,28 @@ function createDatabase(filename = ':memory:') {
   try {
     db.pragma('foreign_keys = ON');
 
-    const migrationsPath = path.join(__dirname, 'migrations', '001_create_users.sql');
+    const migrations = [
+      '001_create_users.sql',
+      '002_create_children.sql'
+    ];
 
-    const sql = fs.readFileSync(migrationsPath, 'utf8');
-    db.exec(sql);
+    db.transaction(() => {
+      for (const migration of migrations) {
+        const migrationPath = path.join(
+          __dirname,
+          'migrations',
+          migration
+        );
+
+        const sql = fs.readFileSync(migrationPath, 'utf8');
+        db.exec(sql);
+      }
+    })();
 
     return db;
   } catch (error) {
     db.close();
-    throw error;        
+    throw error;
   }
 }
 
