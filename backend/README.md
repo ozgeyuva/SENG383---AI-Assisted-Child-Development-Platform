@@ -86,3 +86,16 @@ Verified account information is available through:
 - req.auth.role
 
 Role and child-access authorization will be implemented separately.
+
+## Role authorization
+
+src/middleware/access.js provides shared role authorization.
+It runs after JWT authentication and reads the current account
+role from the database.
+
+Missing accounts receive HTTP 401.
+Disallowed roles receive HTTP 403.
+
+The children API allows parents only and preserves ownership checks.
+
+Specialist-child access and child-account mapping are not yet implemented.

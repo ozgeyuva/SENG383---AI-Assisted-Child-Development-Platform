@@ -1,28 +1,16 @@
 const express = require('express');
 const { createRequireAuth } = require('../middleware/auth');
+const { createRequireRole } = require('../middleware/access');
 
 function createChildrenRouter(db, options = {}) {
   const router = express.Router();
 
   router.use(createRequireAuth(options));
+  router.use(createRequireRole(db, ['parent']));
 
   router.get('/', (req, res, next) => {
   try {
-    const parent = db.prepare(`
-      SELECT id, role FROM users WHERE id = ?
-    `).get(req.auth.userId);
 
-    if (!parent) {
-      return res.status(401).json({
-        error: 'Account not found'
-      });
-    }
-
-    if (parent.role !== 'parent') {
-      return res.status(403).json({
-        error: 'Only parents can list their children'
-      });
-    }
 
     const children = db.prepare(`
       SELECT id, parent_id, first_name, last_name,
@@ -30,7 +18,7 @@ function createChildrenRouter(db, options = {}) {
       FROM children
       WHERE parent_id = ?
       ORDER BY id ASC
-    `).all(parent.id);
+    `).all(req.auth.userId);
 
     return res.status(200).json({ children });
   } catch (error) {
@@ -39,22 +27,7 @@ function createChildrenRouter(db, options = {}) {
 });
 router.get('/:childId', (req, res, next) => {
   try {
-    const parent = db.prepare(`
-      SELECT id, role FROM users WHERE id = ?
-    `).get(req.auth.userId);
-
-    if (!parent) {
-      return res.status(401).json({
-        error: 'Account not found'
-      });
-    }
-
-    if (parent.role !== 'parent') {
-      return res.status(403).json({
-        error: 'Only parents can access child profiles'
-      });
-    }
-
+    
     const { childId } = req.params;
 
     if (
@@ -71,7 +44,7 @@ router.get('/:childId', (req, res, next) => {
              date_of_birth, grade
       FROM children
       WHERE id = ? AND parent_id = ?
-    `).get(Number(childId), parent.id);
+    `).get(Number(childId), req.auth.userId);
 
     if (!child) {
       return res.status(403).json({
@@ -87,22 +60,7 @@ router.get('/:childId', (req, res, next) => {
 
   router.post('/', (req, res, next) => {
     try {
-      const parent = db.prepare(`
-        SELECT id, role FROM users WHERE id = ?
-      `).get(req.auth.userId);
-
-      if (!parent) {
-        return res.status(401).json({
-          error: 'Account not found'
-        });
-      }
-
-      if (parent.role !== 'parent') {
-        return res.status(403).json({
-          error: 'Only parents can create child profiles'
-        });
-      }
-
+      
       const {
         first_name,
         last_name,
@@ -168,7 +126,7 @@ router.get('/:childId', (req, res, next) => {
         )
         VALUES (?, ?, ?, ?, ?)
       `).run(
-        parent.id,
+        req.auth.userId,
         first_name.trim(),
         last_name.trim(),
         birthDate,
