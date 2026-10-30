@@ -103,4 +103,80 @@ describe('List parent children API', () => {
 
     expect(response.status).toBe(403);
   });
+    test('returns the selected child owned by the parent', async () => {
+    const childId = addChild(parent.id, 'Deniz');
+
+    const response = await request(app)
+      .get(`/api/children/${childId}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.child).toMatchObject({
+      id: childId,
+      parent_id: parent.id,
+      first_name: 'Deniz'
+    });
+  });
+
+  test('rejects access to another parent’s child', async () => {
+    const otherParent = db.prepare(`
+      INSERT INTO users (
+        first_name, last_name, email, password_hash, role
+      )
+      SELECT 'Other', 'Parent', 'other@example.test',
+             password_hash, 'parent'
+      FROM users WHERE id = ?
+    `).run(parent.id);
+
+    const childId = addChild(
+      Number(otherParent.lastInsertRowid),
+      'Ece'
+    );
+
+    const response = await request(app)
+      .get(`/api/children/${childId}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body).not.toHaveProperty('child');
+  });
+
+  test('rejects access to a nonexistent child', async () => {
+    const response = await request(app)
+      .get('/api/children/999')
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body).not.toHaveProperty('child');
+  });
+
+  test.each(['abc', '0', '-1', '1.5', '9007199254740992'])(
+    'rejects invalid child ID %s',
+    async (childId) => {
+      const response = await request(app)
+        .get(`/api/children/${childId}`)
+        .set('Authorization', `Bearer ${tokenFor(parent)}`);
+
+      expect(response.status).toBe(400);
+    }
+  );
+
+  test('rejects selected child access without a token', async () => {
+    const childId = addChild(parent.id, 'Deniz');
+
+    const response = await request(app)
+      .get(`/api/children/${childId}`);
+
+    expect(response.status).toBe(401);
+  });
+
+  test('rejects specialist access to a selected child', async () => {
+    const childId = addChild(parent.id, 'Deniz');
+
+    const response = await request(app)
+      .get(`/api/children/${childId}`)
+      .set('Authorization', `Bearer ${tokenFor(specialist)}`);
+
+    expect(response.status).toBe(403);
+  });
 });
