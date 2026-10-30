@@ -1,5 +1,6 @@
 import { useChildSelection } from './ChildSelectionContext'
 import ChildSelector from './ChildSelector'
+import logo from './assets/lumi-logo.png'
 
 function ParentDashboard({ user,
   token,
@@ -14,7 +15,7 @@ function ParentDashboard({ user,
   return (
     <main className="dashboard">
       <header className="dashboard-header">
-        <span className="brand">lumi</span>
+        <img className="brand-logo" src={logo} alt="Lumi" />
         <span className="account-label">Parent Dashboard</span>
       </header>
 

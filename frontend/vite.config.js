@@ -3,6 +3,9 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+  environment: 'jsdom',
+},
   server: {
     proxy: {
       '/api': {
