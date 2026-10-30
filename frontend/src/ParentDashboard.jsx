@@ -1,4 +1,8 @@
-function ParentDashboard({ user, onAddChild }) {
+import { useChildSelection } from './ChildSelectionContext'
+import ChildSelector from './ChildSelector'
+
+function ParentDashboard({ user, token, onAddChild, onOpenTasks }) {
+  const { selectedChild } = useChildSelection()
   const fullName = [user?.first_name, user?.last_name]
     .filter(Boolean)
     .join(' ')
@@ -38,8 +42,10 @@ function ParentDashboard({ user, onAddChild }) {
 
       <section className="actions" aria-label="Parent actions">
         <article className="action-card">
-          <h2>My Children</h2>
-          <p>Create a profile for your child to get started.</p>
+         <h2>My Children</h2>
+<p>Create a profile for your child to get started.</p>
+
+<ChildSelector token={token} />
 
           <button
             type="button"
@@ -51,13 +57,18 @@ function ParentDashboard({ user, onAddChild }) {
         </article>
 
         <article className="action-card">
-          <h2>Tasks</h2>
-          <p>Assign activities to support your child’s development.</p>
+  <h2>Tasks</h2>
 
+  <p>
+    {selectedChild
+      ? `View tasks for ${selectedChild.first_name}.`
+      : 'Select a child to open their tasks page.'}
+  </p>
           <button
             type="button"
             className="secondary-button"
-            disabled
+               onClick={onOpenTasks}
+    disabled={!selectedChild}
           >
             Assign Task
           </button>
