@@ -9,7 +9,9 @@ describe('POST /api/auth/register', () => {
 
     beforeEach(() => {
         db = createDatabase();
-        app = createApp(db);
+       app = createApp(db, {
+  jwtSecret: 'test-secret-for-register-api'
+});
     });
 
     afterEach(() => {

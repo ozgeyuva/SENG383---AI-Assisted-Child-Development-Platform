@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 function createRequireAuth( { jwtSecret} = {}) {
-    if (typeof jwtSecret !== 'string' || jwtSecret.trim() === ' ') {
+    if (typeof jwtSecret !== 'string' || jwtSecret.trim() === '') {
         throw new Error ('JWT_SECRET is not configured.');
     }
 
