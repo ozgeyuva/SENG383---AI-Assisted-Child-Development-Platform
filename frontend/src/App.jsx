@@ -4,6 +4,7 @@ import ChildForm from './ChildForm'
 import ChildTasksPage from './ChildTasksPage'
 import ChildSelectionProvider from './ChildSelectionProvider'
 import './App.css'
+import RegisterForm from './RegisterForm'
 
 function ParentScreen({ user, token }) {
   const [showChildForm, setShowChildForm] = useState(false)
@@ -47,11 +48,16 @@ function ParentScreen({ user, token }) {
 function App({ user = null, token = null }) {
   const sessionKey = JSON.stringify([user?.id ?? null, token])
 
+  if (!user || !token) {
+    return <RegisterForm />
+  }
+  
   return (
     <ChildSelectionProvider key={sessionKey}>
       <ParentScreen user={user} token={token} />
     </ChildSelectionProvider>
   )
 }
+
 
 export default App
