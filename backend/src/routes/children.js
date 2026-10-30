@@ -68,20 +68,21 @@ router.get('/:childId', (req, res, next) => {
         grade
       } = req.body || {};
 
-      const fields = [
-        first_name,
-        last_name,
-        date_of_birth,
-        grade
-      ];
+    const fields = [
+  ['first_name', first_name, 'First name'],
+  ['last_name', last_name, 'Last name'],
+  ['date_of_birth', date_of_birth, 'Date of birth'],
+  ['grade', grade, 'Grade']
+];
 
-      if (fields.some(value =>
-        typeof value !== 'string' || value.trim() === ''
-      )) {
-        return res.status(400).json({
-          error: 'All child profile fields are required'
-        });
-      }
+for (const [field, value, label] of fields) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return res.status(400).json({
+      error: `${label} is required and must be text.`,
+      field
+    });
+  }
+}
 
       const birthDate = date_of_birth.trim();
 
