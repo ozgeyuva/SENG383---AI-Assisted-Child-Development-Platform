@@ -6,6 +6,85 @@ function createChildrenRouter(db, options = {}) {
 
   router.use(createRequireAuth(options));
 
+  router.get('/', (req, res, next) => {
+  try {
+    const parent = db.prepare(`
+      SELECT id, role FROM users WHERE id = ?
+    `).get(req.auth.userId);
+
+    if (!parent) {
+      return res.status(401).json({
+        error: 'Account not found'
+      });
+    }
+
+    if (parent.role !== 'parent') {
+      return res.status(403).json({
+        error: 'Only parents can list their children'
+      });
+    }
+
+    const children = db.prepare(`
+      SELECT id, parent_id, first_name, last_name,
+             date_of_birth, grade
+      FROM children
+      WHERE parent_id = ?
+      ORDER BY id ASC
+    `).all(parent.id);
+
+    return res.status(200).json({ children });
+  } catch (error) {
+    return next(error);
+  }
+});
+router.get('/:childId', (req, res, next) => {
+  try {
+    const parent = db.prepare(`
+      SELECT id, role FROM users WHERE id = ?
+    `).get(req.auth.userId);
+
+    if (!parent) {
+      return res.status(401).json({
+        error: 'Account not found'
+      });
+    }
+
+    if (parent.role !== 'parent') {
+      return res.status(403).json({
+        error: 'Only parents can access child profiles'
+      });
+    }
+
+    const { childId } = req.params;
+
+    if (
+      !/^[1-9]\d*$/.test(childId) ||
+      !Number.isSafeInteger(Number(childId))
+    ) {
+      return res.status(400).json({
+        error: 'Invalid child ID'
+      });
+    }
+
+    const child = db.prepare(`
+      SELECT id, parent_id, first_name, last_name,
+             date_of_birth, grade
+      FROM children
+      WHERE id = ? AND parent_id = ?
+    `).get(Number(childId), parent.id);
+
+    if (!child) {
+      return res.status(403).json({
+        error: 'Child profile is not accessible'
+      });
+    }
+
+    return res.status(200).json({ child });
+  } catch (error) {
+    return next(error);
+  }
+});
+
   router.post('/', (req, res, next) => {
     try {
       const parent = db.prepare(`
