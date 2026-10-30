@@ -69,7 +69,20 @@ Passwords and password hashes are excluded from responses.
 Create a backend/.env file containing JWT_SECRET before starting the API.
 Use a randomly generated secret and keep this file out of Git.
 
-## Current scope
+## Protected routes
 
-User database, demo account seed and registration API are implemented.
-Child login credentials and account-to-profile mapping remain to be agreed.
+JWT authentication middleware is available at src/middleware/auth.js.
+
+Protected requests must include:
+
+    Authorization: Bearer <token>
+
+The middleware verifies the HS256 signature, expiration,
+user ID and role claims. Missing, invalid or expired tokens
+receive HTTP 401.
+
+Verified account information is available through:
+- req.auth.userId
+- req.auth.role
+
+Role and child-access authorization will be implemented separately.
