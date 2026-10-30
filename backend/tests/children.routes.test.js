@@ -96,10 +96,22 @@ describe('Create child API', () => {
   });
 
   test.each([
-    ['missing first name', { first_name: '' }],
-    ['invalid date', { date_of_birth: '2017-02-30' }],
-    ['future date', { date_of_birth: '9999-12-31' }]
-  ])('rejects %s without saving a child', async (_name, changes) => {
+  ['missing first name', { first_name: undefined }],
+  ['missing last name', { last_name: undefined }],
+  ['missing birth date', { date_of_birth: undefined }],
+  ['missing grade', { grade: undefined }],
+  ['blank first name', { first_name: '   ' }],
+  ['blank last name', { last_name: '   ' }],
+  ['blank birth date', { date_of_birth: '   ' }],
+  ['blank grade', { grade: '   ' }],
+  ['non-text grade', { grade: 4 }],
+  ['null first name', { first_name: null }],
+  ['invalid date format', { date_of_birth: '10/05/2017' }],
+  ['invalid date', { date_of_birth: '2017-02-30' }],
+  ['future date', { date_of_birth: '9999-12-31' }]
+])
+
+  ('rejects %s without saving a child', async (_name, changes) => {
     const response = await request(app)
       .post('/api/children')
       .set('Authorization', `Bearer ${tokenFor(parent)}`)
