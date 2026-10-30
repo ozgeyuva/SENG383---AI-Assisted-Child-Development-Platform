@@ -8,6 +8,7 @@ import './App.css'
 function ParentScreen({ user, token }) {
   const [showChildForm, setShowChildForm] = useState(false)
   const [page, setPage] = useState('dashboard')
+  const [childrenVersion, setChildrenVersion] = useState(0)
 
   if (page === 'tasks') {
     return (
@@ -22,6 +23,7 @@ function ParentScreen({ user, token }) {
       <ParentDashboard
         user={user}
         token={token}
+        childrenVersion={childrenVersion}
         onAddChild={() => setShowChildForm(true)}
         onOpenTasks={() => {
           setShowChildForm(false)
@@ -33,6 +35,9 @@ function ParentScreen({ user, token }) {
         <ChildForm
           token={token}
           onClose={() => setShowChildForm(false)}
+          onCreated={() => {
+            setChildrenVersion((previous) => previous + 1)
+          }}
         />
       )}
     </>

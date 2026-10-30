@@ -7,7 +7,7 @@ const emptyForm = {
   grade: '',
 }
 
-function ChildForm({ token, onClose }) {
+function ChildForm({ token, onClose, onCreated }) {
   const [form, setForm] = useState({ ...emptyForm })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -75,6 +75,7 @@ function ChildForm({ token, onClose }) {
 
       setSuccess('Child profile created successfully.')
       setForm({ ...emptyForm })
+      onCreated?.(data.child)
     } catch {
       setError('Could not connect to the server. Please try again.')
     } finally {

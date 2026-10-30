@@ -1,7 +1,11 @@
 import { useChildSelection } from './ChildSelectionContext'
 import ChildSelector from './ChildSelector'
 
-function ParentDashboard({ user, token, onAddChild, onOpenTasks }) {
+function ParentDashboard({ user,
+  token,
+  childrenVersion,
+  onAddChild,
+  onOpenTasks }) {
   const { selectedChild } = useChildSelection()
   const fullName = [user?.first_name, user?.last_name]
     .filter(Boolean)
@@ -45,7 +49,10 @@ function ParentDashboard({ user, token, onAddChild, onOpenTasks }) {
          <h2>My Children</h2>
 <p>Create a profile for your child to get started.</p>
 
-<ChildSelector token={token} />
+<ChildSelector
+  key={childrenVersion}
+  token={token}
+/>
 
           <button
             type="button"
