@@ -1,0 +1,72 @@
+function ParentDashboard({ user, onAddChild }) {
+  const fullName = [user?.first_name, user?.last_name]
+    .filter(Boolean)
+    .join(' ')
+
+  return (
+    <main className="dashboard">
+      <header className="dashboard-header">
+        <span className="brand">lumi</span>
+        <span className="account-label">Parent Dashboard</span>
+      </header>
+
+      <section className="welcome-card">
+        <p className="eyebrow">A little support, every day</p>
+
+        <h1>
+          {fullName ? `Welcome, ${fullName}!` : 'Welcome to Lumi!'}
+        </h1>
+
+        <p className="intro">
+          Support your child’s development, one step at a time.
+        </p>
+
+        {user && (
+          <dl className="account-details">
+            <div>
+              <dt>Name</dt>
+              <dd>{fullName}</dd>
+            </div>
+
+            <div>
+              <dt>Email</dt>
+              <dd>{user.email}</dd>
+            </div>
+          </dl>
+        )}
+      </section>
+
+      <section className="actions" aria-label="Parent actions">
+        <article className="action-card">
+          <h2>My Children</h2>
+          <p>Create a profile for your child to get started.</p>
+
+          <button
+            type="button"
+            className="primary-button"
+            onClick={onAddChild}
+          >
+            + Add My Children
+          </button>
+        </article>
+
+        <article className="action-card">
+          <h2>Tasks</h2>
+          <p>Assign activities to support your child’s development.</p>
+
+          <button
+            type="button"
+            className="secondary-button"
+            disabled
+          >
+            Assign Task
+          </button>
+
+          <small>Coming soon</small>
+        </article>
+      </section>
+    </main>
+  )
+}
+
+export default ParentDashboard
