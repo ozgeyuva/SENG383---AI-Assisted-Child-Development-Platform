@@ -232,3 +232,34 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+
+.brand-logo {
+  display: block;
+  width: 160px;
+  max-width: 45%;
+  height: auto;
+}
+
+.registration-page {
+  max-width: 700px;
+}
+
+.registration-form select{
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #ccd9d1;
+  border-radius: 8px;
+  color: #17213c;
+  background: #fff;
+}
+
+.registration-form select:focus-visible {
+  outline: 2px solid #278779;
+  outline-offset: 2px;
+}
+
+.registration-form .primary-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
