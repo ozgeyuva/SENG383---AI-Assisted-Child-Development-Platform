@@ -1,3 +1,4 @@
+import { getToday, validateChildForm } from './validateChildForm'
 import { useState } from 'react'
 
 const emptyForm = {
@@ -13,12 +14,7 @@ function ChildForm({ token, onClose, onCreated }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const now = new Date()
-  const today = [
-    String(now.getFullYear()).padStart(4, '0'),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0'),
-  ].join('-')
+  const today = getToday()
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -39,15 +35,12 @@ function ChildForm({ token, onClose, onCreated }) {
     setError('')
     setSuccess('')
 
-    if (Object.values(form).some((value) => value.trim() === '')) {
-      setError('Please complete all fields.')
-      return
-    }
+   const validationError = validateChildForm(form)
 
-    if (form.date_of_birth > today) {
-      setError('Date of birth cannot be in the future.')
-      return
-    }
+    if (validationError) {
+    setError(validationError)
+    return
+}
 
     if (!token) {
       setError('Please sign in to add a child.')
