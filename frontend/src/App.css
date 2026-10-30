@@ -194,3 +194,41 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+.child-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.child-selector label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.child-selector select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccd9d1;
+  border-radius: 8px;
+  color: #17213c;
+  background: #fff;
+}
+
+.child-selector select:focus-visible {
+  outline: 2px solid #278779;
+  outline-offset: 2px;
+}
+.child-tasks-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+@media (max-width: 700px) {
+  .child-tasks-layout {
+    grid-template-columns: 1fr;
+  }
+}
