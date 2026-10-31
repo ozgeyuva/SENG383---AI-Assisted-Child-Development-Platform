@@ -78,10 +78,9 @@ function ParentDashboard({ user,
                onClick={onOpenTasks}
     disabled={!selectedChild}
           >
-            Assign Task
+            Open Child’s Tasks
           </button>
 
-          <small>Coming soon</small>
         </article>
       </section>
     </main>
