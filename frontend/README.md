@@ -9,6 +9,12 @@ category and due-date fields. Categories load from the authenticated
 Submission calls `POST /api/tasks` with the selected child ID and session JWT.
 The server sets the initial status to Not Started; parents cannot edit it.
 
+KAN-120 shows required-field errors beside each input, marks invalid controls
+with aria-invalid and connects messages with aria-describedby. Submission
+focuses the first invalid field and sends no request until details are valid.
+API errors/errors maps are displayed against known form fields; editing a field
+clears its error while preserving other values and outstanding field errors.
+
 The form disables submission during category loading and saving, supports
 category-load retry, preserves entered values on failure and clears after
 success. Changing child/session remounts the form and cancels pending requests.
