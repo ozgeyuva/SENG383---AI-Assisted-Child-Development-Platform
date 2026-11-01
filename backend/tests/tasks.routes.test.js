@@ -53,6 +53,26 @@ describe('Task assignment API', () => {
 
   afterEach(() => db.close());
 
+  test.each(['title', 'description', 'category', 'due_date'].flatMap(field =>
+    [undefined, null, '', '   ', 123, [], {}].map(value => [field, value])
+  ))('rejects incomplete %s (%j) and preserves existing tasks', async (field, value) => {
+    const created = await assign();
+    expect(created.status).toBe(201);
+    const before = db.prepare('SELECT * FROM tasks ORDER BY id').all();
+    const response = await assign({ ...validTask, [field]: value });
+    expect(response.status).toBe(400);
+    expect(response.body.field).toBe(field);
+    expect(response.body.errors[field]).toBeTruthy();
+    expect(db.prepare('SELECT * FROM tasks ORDER BY id').all()).toEqual(before);
+  });
+
+  test('reports all missing task details together without inserting a record', async () => {
+    const response = await assign({ child_id: childId });
+    expect(response.status).toBe(400);
+    expect(Object.keys(response.body.errors)).toEqual(['title', 'description', 'category', 'due_date']);
+    expect(db.prepare('SELECT COUNT(*) AS total FROM tasks').get().total).toBe(0);
+  });
+
   test('lists every task for the owned child, including another assigner, ordered by due date and ID', async () => {
     const insert = db.prepare(`
       INSERT INTO tasks (child_id, assigned_by, title, description, category, due_date, status)

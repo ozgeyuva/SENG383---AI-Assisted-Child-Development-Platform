@@ -65,6 +65,7 @@ function createTasksRouter(db, options = {}) {
         return res.status(403).json({ error: 'Child profile is not accessible' });
       }
 
+      const errors = {};
       for (const [field, value, label] of [
         ['title', title, 'Title'],
         ['description', description, 'Description'],
@@ -72,11 +73,13 @@ function createTasksRouter(db, options = {}) {
         ['due_date', due_date, 'Due date']
       ]) {
         if (typeof value !== 'string' || value.trim() === '') {
-          return res.status(400).json({
-            error: `${label} is required and must be text.`,
-            field
-          });
+          errors[field] = `${label} is required and must be text.`;
         }
+      }
+
+      if (Object.keys(errors).length) {
+        const field = Object.keys(errors)[0];
+        return res.status(400).json({ error: errors[field], field, errors });
       }
 
       const dueDate = due_date.trim();

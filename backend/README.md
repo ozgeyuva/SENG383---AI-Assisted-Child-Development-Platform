@@ -160,7 +160,8 @@ IDs, assigner, status and timestamps cannot override these values.
 
 Responses:
 - 201: Returns `{ "task": { ... } }` containing the saved task.
-- 400: Invalid or missing fields; includes error and field.
+- 400: Invalid or missing fields; includes error and field. KAN-121 also returns
+  an errors map for all missing, blank or non-text task details in one response.
 - 401: Missing, invalid or expired token, or a deleted account.
 - 403: Non-parent account, another parent's child or nonexistent child.
 
