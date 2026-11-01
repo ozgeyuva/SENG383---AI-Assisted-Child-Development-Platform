@@ -52,6 +52,9 @@ test.each(['Title', 'Description', 'Category', 'Due date'])(
     fireEvent.change(screen.getByLabelText(label), { target: { value: '' } })
     await userEvent.click(screen.getByRole('button', { name: 'Assign Task' }))
     expect(screen.getByLabelText(label).validity.valueMissing).toBe(true)
+    expect(screen.getByLabelText(label).getAttribute('aria-invalid')).toBe('true')
+    const message = document.getElementById(screen.getByLabelText(label).getAttribute('aria-describedby'))
+    expect(message.textContent).toBe(`${label} is required.`)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   }
 )
@@ -63,6 +66,42 @@ test.each(['Title', 'Description'])('rejects whitespace-only %s', async label =>
   await userEvent.click(screen.getByRole('button', { name: 'Assign Task' }))
   expect(screen.getByRole('alert').textContent).toBe(`${label} is required.`)
   expect(fetchMock).toHaveBeenCalledTimes(1)
+})
+
+test('shows all required-field errors together and focuses the first field', async () => {
+  render(<TaskForm childId={10} token="parent-token" />)
+  await screen.findByRole('option', { name: 'Academic' })
+  await userEvent.click(screen.getByRole('button', { name: 'Assign Task' }))
+  for (const label of ['Title', 'Description', 'Category', 'Due date']) {
+    const input = screen.getByLabelText(label)
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(document.getElementById(input.getAttribute('aria-describedby')).textContent)
+      .toBe(`${label} is required.`)
+  }
+  expect(document.activeElement).toBe(screen.getByLabelText('Title'))
+  expect(fetchMock).toHaveBeenCalledTimes(1)
+  await userEvent.type(screen.getByLabelText('Title'), 'Read')
+  expect(screen.getByLabelText('Title').getAttribute('aria-invalid')).toBe('false')
+  expect(screen.getByLabelText('Description').getAttribute('aria-invalid')).toBe('true')
+})
+
+test('maps API field errors to their inputs while preserving details and supports correction', async () => {
+  fetchMock.mockResolvedValueOnce(response({ categories }))
+    .mockResolvedValueOnce(response({
+      error: 'Invalid category.', field: 'category',
+      errors: { category: 'This category is no longer available.' },
+    }, false))
+    .mockResolvedValueOnce(response({ task: { status: 'Not Started' } }))
+  render(<TaskForm childId={10} token="parent-token" />)
+  await fillForm()
+  await userEvent.click(screen.getByRole('button', { name: 'Assign Task' }))
+  await screen.findByText('This category is no longer available.')
+  expect(screen.getByLabelText('Category').getAttribute('aria-invalid')).toBe('true')
+  expect(screen.getByLabelText('Title').value).toBe(' Read a book ')
+  await userEvent.selectOptions(screen.getByLabelText('Category'), 'Health')
+  expect(screen.queryByText('This category is no longer available.')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Assign Task' }))
+  await screen.findByText('Task assigned successfully. Status: Not Started.')
 })
 
 test.each(['server', 'network'])(
