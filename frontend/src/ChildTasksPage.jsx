@@ -1,6 +1,7 @@
 import { useChildSelection } from './ChildSelectionContext'
+import TaskForm from './TaskForm'
 
-function ChildTasksPage({ onBack }) {
+function ChildTasksPage({ onBack, token }) {
   const { selectedChild } = useChildSelection()
 
   if (!selectedChild) {
@@ -53,15 +54,11 @@ function ChildTasksPage({ onBack }) {
             {selectedChild.first_name} {selectedChild.last_name}.
           </p>
 
-          <button
-            type="button"
-            className="primary-button"
-            disabled
-          >
-            Assign Task
-          </button>
-
-          <small>Coming soon</small>
+          <TaskForm
+            key={JSON.stringify([selectedChild.id, token])}
+            childId={selectedChild.id}
+            token={token}
+          />
         </aside>
       </div>
     </main>

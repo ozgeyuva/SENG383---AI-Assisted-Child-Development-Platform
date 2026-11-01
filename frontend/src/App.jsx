@@ -17,6 +17,7 @@ function ParentScreen({ user, token }) {
   if (page === 'tasks') {
     return (
       <ChildTasksPage
+        token={token}
         onBack={() => setPage('dashboard')}
       />
     )

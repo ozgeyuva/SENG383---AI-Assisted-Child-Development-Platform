@@ -53,6 +53,21 @@ describe('Task assignment API', () => {
 
   afterEach(() => db.close());
 
+  test('returns the shared category list for an authenticated parent', async () => {
+    const response = await request(app).get('/api/tasks/categories')
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+    expect(response.status).toBe(200);
+    expect(response.body.categories).toEqual(
+      db.prepare('SELECT name FROM task_categories ORDER BY name').all().map(row => row.name)
+    );
+  });
+
+  test('protects category access with the existing authentication and role policy', async () => {
+    expect((await request(app).get('/api/tasks/categories')).status).toBe(401);
+    expect((await request(app).get('/api/tasks/categories')
+      .set('Authorization', `Bearer ${tokenFor(specialist)}`)).status).toBe(403);
+  });
+
   test('assigns an owned child a task and derives identity and initial status on the server', async () => {
     const response = await assign({
       ...validTask, assigned_by: otherParent.id, parent_id: otherParent.id,

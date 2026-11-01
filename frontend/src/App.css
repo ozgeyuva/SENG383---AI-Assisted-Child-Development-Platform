@@ -275,3 +275,34 @@ h2 {
   display: flex;
   justify-content: flex-end;
 }
+
+.child-form.task-form fieldset {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.task-form textarea,
+.task-form select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #ccd9d1;
+  border-radius: 8px;
+  color: #17213c;
+  background: #fff;
+  font: inherit;
+}
+
+.task-form textarea {
+  resize: vertical;
+}
+
+.task-form textarea:focus-visible,
+.task-form select:focus-visible {
+  outline: 2px solid #278779;
+  outline-offset: 2px;
+}
+
+.task-form > .primary-button {
+  width: 100%;
+  margin-top: 20px;
+}
