@@ -263,3 +263,15 @@ h2 {
   grid-column: 1 / -1;
   justify-self: start;
 }
+
+.child-form.login-form fieldset {
+  grid-template-columns: 1fr;
+}
+
+.session-actions {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px 24px 0;
+  display: flex;
+  justify-content: flex-end;
+}

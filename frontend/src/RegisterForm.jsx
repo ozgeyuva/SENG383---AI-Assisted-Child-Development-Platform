@@ -10,7 +10,7 @@ const initialForm = {
     role: 'parent'
 }
 
-function RegisterForm() {
+function RegisterForm({ onLogin }) {
     const [form, setForm] = useState(initialForm)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState('')
@@ -170,6 +170,16 @@ return (
             {error && <p className="form-error" role="alert">{error}</p>}
             {success && <p className="form-success" role="status">{success}</p>}
         </form>
+        {onLogin && (
+            <button
+                type="button"
+                className="secondary-button"
+                onClick={onLogin}
+                disabled={isSubmitting}
+            >
+                Already have an account? Log in
+            </button>
+        )}
     </section>
 </main>
 )
