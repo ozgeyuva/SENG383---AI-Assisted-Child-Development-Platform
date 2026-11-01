@@ -9,6 +9,16 @@ function createTasksRouter(db, options = {}) {
   // Current MVP scope: parent assignment only. Specialist links belong to M2.
   router.use(createRequireRole(db, ['parent']));
 
+  router.get('/categories', (req, res, next) => {
+    try {
+      const categories = db.prepare('SELECT name FROM task_categories ORDER BY name')
+        .all().map(category => category.name);
+      return res.status(200).json({ categories });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.post('/', (req, res, next) => {
     try {
       const { child_id, title, description, category, due_date } = req.body || {};

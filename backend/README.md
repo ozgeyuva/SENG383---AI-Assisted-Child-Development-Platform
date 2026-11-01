@@ -119,6 +119,10 @@ Specialist-child access and child-account mapping are not yet implemented.
 
 ## Task assignment (KAN-117, parent MVP)
 
+KAN-116 adds authenticated `GET /api/tasks/categories`, returning
+`{ "categories": ["Academic", "Extracurricular", "Health"] }` from the shared
+task_categories table. It uses the same parent-only access policy as assignment.
+
 POST /api/tasks
 
 Requires a parent JWT in the Authorization header. This branch depends on
