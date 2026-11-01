@@ -12,7 +12,12 @@ The server sets the initial status to Not Started; parents cannot edit it.
 The form disables submission during category loading and saving, supports
 category-load retry, preserves entered values on failure and clears after
 success. Changing child/session remounts the form and cancels pending requests.
-Task-list retrieval is a separate work item (KAN-127/128).
+KAN-127/128 load the selected child's tasks in the existing Task List card.
+Tasks are grouped by due date, include title, description, category and status,
+and can be filtered by status. Loading, empty, error and retry states are
+included. Successful assignment reloads the list from the server. Child/session
+changes discard the previous list and cancel pending requests. The current MVP
+provides parent viewing; task completion and specialist views are separate work.
 
 Run the backend with JWT_SECRET configured and start this frontend with
 `npm run dev`; the existing Vite proxy forwards `/api` to port 3000.
