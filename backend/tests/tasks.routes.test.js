@@ -53,6 +53,55 @@ describe('Task assignment API', () => {
 
   afterEach(() => db.close());
 
+  test('lists every task for the owned child, including another assigner, ordered by due date and ID', async () => {
+    const insert = db.prepare(`
+      INSERT INTO tasks (child_id, assigned_by, title, description, category, due_date, status)
+      VALUES (?, ?, ?, 'Test details', 'Academic', ?, ?)
+    `);
+    insert.run(childId, parent.id, 'Later', '2026-11-10', 'Not Started');
+    insert.run(childId, specialist.id, 'Earlier', '2026-11-08', 'Completed');
+    insert.run(childId, parent.id, 'Same day', '2026-11-08', 'In Progress');
+    const otherChild = db.prepare(`
+      INSERT INTO children (parent_id, first_name, last_name, date_of_birth, grade)
+      VALUES (?, 'Other', 'Child', '2017-05-10', '4')
+    `).run(otherParent.id).lastInsertRowid;
+    insert.run(otherChild, otherParent.id, 'Private', '2026-11-01', 'Not Started');
+    const response = await request(app).get(`/api/tasks?childId=${childId}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+    expect(response.status).toBe(200);
+    expect(response.body.tasks.map(task => task.title)).toEqual(['Earlier', 'Same day', 'Later']);
+    expect(response.body.tasks[0].assigned_by).toBe(specialist.id);
+    expect(response.body.tasks[0].status).toBe('Completed');
+    expect(response.body.tasks.every(task => task.child_id === childId)).toBe(true);
+  });
+
+  test('returns an empty task list for an owned child without tasks', async () => {
+    const response = await request(app).get(`/api/tasks?childId=${childId}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ tasks: [] });
+  });
+
+  test.each(['', 'abc', '0', '-1', '1.5', '9007199254740992', '1&childId=2'])(
+    'rejects invalid list child ID %s', async value => {
+      const response = await request(app).get(`/api/tasks?childId=${value}`)
+        .set('Authorization', `Bearer ${tokenFor(parent)}`);
+      expect(response.status).toBe(400);
+    }
+  );
+
+  test('rejects missing child selection and unauthorized list access', async () => {
+    expect((await request(app).get('/api/tasks')
+      .set('Authorization', `Bearer ${tokenFor(parent)}`)).status).toBe(400);
+    expect((await request(app).get(`/api/tasks?childId=${childId}`)).status).toBe(401);
+    for (const user of [otherParent, specialist, childAccount]) {
+      expect((await request(app).get(`/api/tasks?childId=${childId}`)
+        .set('Authorization', `Bearer ${tokenFor(user)}`)).status).toBe(403);
+    }
+    expect((await request(app).get('/api/tasks?childId=99999')
+      .set('Authorization', `Bearer ${tokenFor(parent)}`)).status).toBe(403);
+  });
+
   test('returns the shared category list for an authenticated parent', async () => {
     const response = await request(app).get('/api/tasks/categories')
       .set('Authorization', `Bearer ${tokenFor(parent)}`);
