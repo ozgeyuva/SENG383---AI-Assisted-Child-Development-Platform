@@ -6,6 +6,8 @@ import ChildSelectionProvider from './ChildSelectionProvider'
 import './App.css'
 import RegisterForm from './RegisterForm'
 import LoginForm from './LoginForm'
+import SpecialistDashboard from './SpecialistDashboard'
+import ChildDashboard from './ChildDashboard'
 
 function ParentScreen({ user, token }) {
   const [showChildForm, setShowChildForm] = useState(false)
@@ -89,12 +91,13 @@ function SessionApp({ user = null, token = null }) {
       <ChildSelectionProvider key={sessionKey}>
         <ParentScreen user={session.user} token={session.token} />
       </ChildSelectionProvider>
+    ) : session.user.role === 'specialist' ? (
+      <SpecialistDashboard user={session.user} />
+    ) : session.user.role === 'child' ? (
+      <ChildDashboard user={session.user} />
     ) : (
       <main className="dashboard">
-        <section className="welcome-card">
-          <h1>Welcome, {session.user.firstName}!</h1>
-          <p>Account role: {session.user.role}</p>
-        </section>
+        <p role="alert">This account role is not supported.</p>
       </main>
     )}
   </>
