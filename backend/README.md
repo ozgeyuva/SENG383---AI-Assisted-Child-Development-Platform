@@ -22,6 +22,23 @@ Synthetic demo accounts:
 Passwords are stored as hashes.
 Running the seed again preserves existing accounts.
 
+KAN-118 adds `003_create_tasks.sql` to the existing migration list. Database
+initialization applies it automatically, including when opening an existing
+database. Existing users and child profiles are preserved.
+
+Tasks reference `children.id` through `child_id` and `users.id` through
+`assigned_by`. The shared `task_categories` table contains Academic,
+Extracurricular and Health, following the SRS task mockup. Task forms and
+statistics should read this same list. Required task fields are title,
+description, category and due_date (YYYY-MM-DD). New tasks default to
+Not Started; supported statuses are Not Started, In Progress and Completed.
+The nullable completed_at field is reserved for the completion flow.
+
+The seed also creates a synthetic task for Deniz Demo and preserves its
+progress on subsequent runs. Task assignment authorization belongs in the
+task API: foreign keys alone do not enforce parent ownership or specialist
+linkage. This migration does not implement task routes or child login mapping.
+
 ## Tests
 
     npm test
