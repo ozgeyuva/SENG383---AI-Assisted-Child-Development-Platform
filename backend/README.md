@@ -119,6 +119,13 @@ Specialist-child access and child-account mapping are not yet implemented.
 
 ## Task assignment (KAN-117, parent MVP)
 
+KAN-128 adds parent-authenticated `GET /api/tasks?childId=1`, returning
+`{ "tasks": [...] }` ordered by due_date then id. The parent must own the
+selected child and receives all their tasks regardless of assigner. An owned
+child without tasks returns an empty array. Missing/invalid childId returns
+400, missing/invalid authentication 401, inaccessible children and non-parent
+accounts 403. Specialist listing remains outside the current parent MVP.
+
 KAN-116 adds authenticated `GET /api/tasks/categories`, returning
 `{ "categories": ["Academic", "Extracurricular", "Health"] }` from the shared
 task_categories table. It uses the same parent-only access policy as assignment.

@@ -9,6 +9,33 @@ function createTasksRouter(db, options = {}) {
   // Current MVP scope: parent assignment only. Specialist links belong to M2.
   router.use(createRequireRole(db, ['parent']));
 
+  router.get('/', (req, res, next) => {
+    try {
+      const { childId } = req.query;
+      if (typeof childId !== 'string' || !/^[1-9]\d*$/.test(childId) ||
+          !Number.isSafeInteger(Number(childId))) {
+        return res.status(400).json({ error: 'Invalid child ID', field: 'childId' });
+      }
+
+      const child = db.prepare(
+        'SELECT id FROM children WHERE id = ? AND parent_id = ?'
+      ).get(Number(childId), req.auth.userId);
+      if (!child) {
+        return res.status(403).json({ error: 'Child profile is not accessible' });
+      }
+
+      const tasks = db.prepare(`
+        SELECT id, child_id, assigned_by, title, description, category,
+               due_date, status, created_at, completed_at
+        FROM tasks WHERE child_id = ?
+        ORDER BY due_date ASC, id ASC
+      `).all(child.id);
+      return res.status(200).json({ tasks });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.get('/categories', (req, res, next) => {
     try {
       const categories = db.prepare('SELECT name FROM task_categories ORDER BY name')
