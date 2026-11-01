@@ -77,6 +77,38 @@ function seedChildren(db) {
 
     seed();
 }
+function seedTasks(db) {
+    const child = db.prepare(`
+        SELECT children.id, children.parent_id
+        FROM children
+        JOIN users ON users.id = children.parent_id
+        WHERE users.email = ? AND users.role = 'parent'
+          AND children.first_name = ? AND children.last_name = ?
+          AND children.date_of_birth = ?
+        ORDER BY children.id LIMIT 1
+    `).get('parent@example.test', 'Deniz', 'Demo', '2017-05-10');
+
+    if (!child) {
+        throw new Error('Run seedUser and seedChildren before seedTasks.');
+    }
+
+    db.prepare(`
+        INSERT INTO tasks (
+            child_id, assigned_by, title, description, category, due_date
+        )
+        SELECT ?, ?, ?, ?, ?, ?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM tasks
+            WHERE child_id = ? AND assigned_by = ? AND title = ?
+              AND due_date = ?
+        )
+    `).run(
+        child.id, child.parent_id, 'Read for 15 minutes',
+        'Read a book of your choice.', 'Academic', '2026-11-08',
+        child.id, child.parent_id, 'Read for 15 minutes', '2026-11-08'
+    );
+}
+
 if (require.main === module) {
     const dataDirectory = path.join(__dirname, '..', '..', 'data');
     fs.mkdirSync(dataDirectory, { recursive: true });
@@ -86,6 +118,7 @@ if (require.main === module) {
     try {
     seedUser(db);
     seedChildren(db);
+    seedTasks(db);
 
     console.table(
         db.prepare('SELECT id, email, role FROM users').all()
@@ -99,4 +132,4 @@ if (require.main === module) {
 }
 }
 
-module.exports = { seedUser, seedChildren };
+module.exports = { seedUser, seedChildren, seedTasks };
