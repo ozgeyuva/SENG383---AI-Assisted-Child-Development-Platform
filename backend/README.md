@@ -116,3 +116,43 @@ Disallowed roles receive HTTP 403.
 The children API allows parents only and preserves ownership checks.
 
 Specialist-child access and child-account mapping are not yet implemented.
+
+## Task assignment (KAN-117, parent MVP)
+
+POST /api/tasks
+
+Requires a parent JWT in the Authorization header. This branch depends on
+the KAN-118 task migration. The current MVP implements parent assignment;
+linked-specialist assignment remains outside this MVP and depends on M2.
+Specialist and child accounts receive HTTP 403.
+
+Example JSON request:
+
+```json
+{
+  "child_id": 1,
+  "title": "Read for 15 minutes",
+  "description": "Read a book of your choice.",
+  "category": "Academic",
+  "due_date": "2026-11-08"
+}
+```
+
+All six fields are required. child_id must be a positive integer identifying
+one of the authenticated parent's children. Text fields are trimmed. Category
+must exist in task_categories; due_date must be a valid YYYY-MM-DD calendar
+date. No future-only restriction is imposed on due dates.
+
+The server derives assigned_by from the authenticated account, uses the
+database default Not Started and leaves completed_at null. Client-supplied
+IDs, assigner, status and timestamps cannot override these values.
+
+Responses:
+- 201: Returns `{ "task": { ... } }` containing the saved task.
+- 400: Invalid or missing fields; includes error and field.
+- 401: Missing, invalid or expired token, or a deleted account.
+- 403: Non-parent account, another parent's child or nonexistent child.
+
+Rejected requests do not create tasks. The API rechecks the stored account
+role and child ownership on every request. Task listing and completion are
+separate work items.
