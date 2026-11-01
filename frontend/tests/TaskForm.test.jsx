@@ -113,13 +113,19 @@ test('prevents duplicate submission and disables fields while saving', async () 
 
 test('uses the child selected on the dashboard and the current session token', async () => {
   const parent = { id: 1, role: 'parent', first_name: 'Demo', last_name: 'Parent' }
+  let savedTask = null
   fetchMock.mockImplementation(async url => {
     if (url === '/api/children') return response({ children: [
       { id: 10, first_name: 'Deniz', last_name: 'Demo', grade: '4' },
       { id: 11, first_name: 'Ece', last_name: 'Demo', grade: '3' },
     ] })
     if (url === '/api/tasks/categories') return response({ categories })
-    return response({ task: { status: 'Not Started' } })
+    if (url.startsWith('/api/tasks?')) return response({ tasks: savedTask ? [savedTask] : [] })
+    savedTask = {
+      id: 1, child_id: 11, title: 'Read a book', description: 'Read for 15 minutes.',
+      category: 'Academic', due_date: '2026-11-08', status: 'Not Started',
+    }
+    return response({ task: savedTask })
   })
   render(<App user={parent} token="parent-token" />)
   await userEvent.selectOptions(await screen.findByLabelText('Select your child'), '11')
@@ -131,4 +137,6 @@ test('uses the child selected on the dashboard and the current session token', a
   expect(JSON.parse(options.body).child_id).toBe(11)
   expect(options.headers.Authorization).toBe('Bearer parent-token')
   await screen.findByText('Task assigned successfully. Status: Not Started.')
+  await screen.findByRole('heading', { name: 'Read a book' })
+  expect(fetchMock.mock.calls.filter(([url]) => url === '/api/tasks?childId=11')).toHaveLength(2)
 })
