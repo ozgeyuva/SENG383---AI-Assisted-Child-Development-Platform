@@ -1,0 +1,84 @@
+const express = require('express');
+const { createRequireAuth } = require('../middleware/auth');
+const { createRequireRole } = require('../middleware/access');
+
+function createTasksRouter(db, options = {}) {
+  const router = express.Router();
+
+  router.use(createRequireAuth(options));
+  // Current MVP scope: parent assignment only. Specialist links belong to M2.
+  router.use(createRequireRole(db, ['parent']));
+
+  router.post('/', (req, res, next) => {
+    try {
+      const { child_id, title, description, category, due_date } = req.body || {};
+
+      if (!Number.isSafeInteger(child_id) || child_id < 1) {
+        return res.status(400).json({
+          error: 'Child ID must be a positive integer.',
+          field: 'child_id'
+        });
+      }
+
+      const child = db.prepare(`
+        SELECT id FROM children WHERE id = ? AND parent_id = ?
+      `).get(child_id, req.auth.userId);
+
+      if (!child) {
+        return res.status(403).json({ error: 'Child profile is not accessible' });
+      }
+
+      for (const [field, value, label] of [
+        ['title', title, 'Title'],
+        ['description', description, 'Description'],
+        ['category', category, 'Category'],
+        ['due_date', due_date, 'Due date']
+      ]) {
+        if (typeof value !== 'string' || value.trim() === '') {
+          return res.status(400).json({
+            error: `${label} is required and must be text.`,
+            field
+          });
+        }
+      }
+
+      const dueDate = due_date.trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+        return res.status(400).json({
+          error: 'Due date must use YYYY-MM-DD format.', field: 'due_date'
+        });
+      }
+
+      const parsedDate = new Date(`${dueDate}T00:00:00.000Z`);
+      if (Number.isNaN(parsedDate.getTime()) ||
+          parsedDate.toISOString().slice(0, 10) !== dueDate) {
+        return res.status(400).json({ error: 'Invalid due date.', field: 'due_date' });
+      }
+
+      const selectedCategory = category.trim();
+      if (!db.prepare('SELECT name FROM task_categories WHERE name = ?')
+        .get(selectedCategory)) {
+        return res.status(400).json({ error: 'Invalid category.', field: 'category' });
+      }
+
+      const result = db.prepare(`
+        INSERT INTO tasks (child_id, assigned_by, title, description, category, due_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        child.id, req.auth.userId, title.trim(), description.trim(),
+        selectedCategory, dueDate
+      );
+
+      const task = db.prepare('SELECT * FROM tasks WHERE id = ?')
+        .get(result.lastInsertRowid);
+
+      return res.status(201).json({ task });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  return router;
+}
+
+module.exports = { createTasksRouter };
