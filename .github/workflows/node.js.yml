@@ -2,25 +2,39 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - develop
 
 jobs:
-  build:
+  e2e:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
 
-      - name: Verify Node.js installation
-        run: node --version
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
 
-      - name: Verify npm installation
-        run: npm --version
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser tests
+        working-directory: frontend
+        run: npx playwright test
