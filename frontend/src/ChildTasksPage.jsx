@@ -1,7 +1,11 @@
 import { useChildSelection } from './ChildSelectionContext'
+import TaskForm from './TaskForm'
+import TaskList from './TaskList'
+import { useState } from 'react'
 
-function ChildTasksPage({ onBack }) {
+function ChildTasksPage({ onBack, token }) {
   const { selectedChild } = useChildSelection()
+  const [tasksVersion, setTasksVersion] = useState(0)
 
   if (!selectedChild) {
     return (
@@ -43,7 +47,11 @@ function ChildTasksPage({ onBack }) {
       <div className="child-tasks-layout">
         <section className="action-card">
           <h2>Task List</h2>
-          <p>The task list will be available here soon.</p>
+          <TaskList
+            key={JSON.stringify([selectedChild.id, token, tasksVersion])}
+            childId={selectedChild.id}
+            token={token}
+          />
         </section>
 
         <aside className="action-card">
@@ -53,15 +61,12 @@ function ChildTasksPage({ onBack }) {
             {selectedChild.first_name} {selectedChild.last_name}.
           </p>
 
-          <button
-            type="button"
-            className="primary-button"
-            disabled
-          >
-            Assign Task
-          </button>
-
-          <small>Coming soon</small>
+          <TaskForm
+            key={JSON.stringify([selectedChild.id, token])}
+            childId={selectedChild.id}
+            token={token}
+            onCreated={() => setTasksVersion(previous => previous + 1)}
+          />
         </aside>
       </div>
     </main>
