@@ -11,7 +11,8 @@ function createDatabase(filename = ':memory:') {
     const migrations = [
       '001_create_users.sql',
       '002_create_children.sql',
-      '003_create_tasks.sql'
+      '003_create_tasks.sql',
+      '004_create_child_accounts.sql'
     ];
 
     db.transaction(() => {
