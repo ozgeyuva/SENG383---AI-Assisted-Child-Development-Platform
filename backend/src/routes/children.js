@@ -143,7 +143,73 @@ for (const [field, value, label] of fields) {
       return next(error);
     }
   });
+  router.post('/:childId/specialists', (req, res, next) => {
+    try {
+      const { childId } = req.params;
 
+      if (
+        !/^[1-9]\d*$/.test(childId) ||
+        !Number.isSafeInteger(Number(childId))
+      ) {
+        return res.status(400).json({ error: 'Invalid child ID' });
+      }
+
+      const child = db.prepare(`
+        SELECT id FROM children WHERE id = ? AND parent_id = ?
+      `).get(Number(childId), req.auth.userId);
+
+      if (!child) {
+        return res.status(403).json({
+          error: 'Child profile is not accessible'
+        });
+      }
+
+      const { email, specialist_type } = req.body || {};
+
+      if (typeof email !== 'string' || !email.trim()) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      if (typeof specialist_type !== 'string' || !specialist_type.trim()) {
+        return res.status(400).json({ error: 'Specialist type is required' });
+      }
+
+      const specialist = db.prepare(`
+        SELECT id FROM users
+        WHERE email = ? COLLATE NOCASE AND role = 'specialist'
+      `).get(email.trim());
+
+      if (!specialist) {
+        return res.status(404).json({
+          error: 'No registered specialist found for this email'
+        });
+      }
+
+      const link = {
+        child_id: child.id,
+        specialist_id: specialist.id,
+        specialist_type: specialist_type.trim()
+      };
+
+      const result = db.prepare(`
+        INSERT INTO child_specialist_links (
+          child_id, specialist_id, specialist_type
+        )
+        VALUES (?, ?, ?)
+        ON CONFLICT(child_id, specialist_id) DO NOTHING
+      `).run(link.child_id, link.specialist_id, link.specialist_type);
+
+      if (result.changes === 0) {
+        return res.status(409).json({
+          error: 'This specialist is already linked to the child'
+        });
+      }
+
+      return res.status(201).json({ link });
+    } catch (error) {
+      return next(error);
+    }
+  });
   return router;
 }
 
