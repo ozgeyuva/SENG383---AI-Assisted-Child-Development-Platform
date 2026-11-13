@@ -8,12 +8,13 @@ function createDatabase(filename = ':memory:') {
   try {
     db.pragma('foreign_keys = ON');
 
-    const migrations = [
-      '001_create_users.sql',
-      '002_create_children.sql',
-      '003_create_tasks.sql',
-      '004_create_child_accounts.sql'
-    ];
+   const migrations = [
+  '001_create_users.sql',
+  '002_create_children.sql',
+  '003_create_tasks.sql',
+  '004_create_child_accounts.sql',
+  '005_create_child_specialist_links.sql'
+];
 
     db.transaction(() => {
       for (const migration of migrations) {
