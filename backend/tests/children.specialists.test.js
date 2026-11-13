@@ -16,7 +16,7 @@ describe('POST /api/children/:childId/specialists', () => {
   let parent;
   let childId;
 
-  function linkSpecialist(user) {
+  function linkSpecialist(user, payload = body) {
     const token = jwt.sign({ role: user.role }, jwtSecret, {
       subject: String(user.id),
       expiresIn: '1h',
@@ -26,7 +26,7 @@ describe('POST /api/children/:childId/specialists', () => {
     return request(app)
       .post(`/api/children/${childId}/specialists`)
       .set('Authorization', `Bearer ${token}`)
-      .send(body);
+      .send(payload);
   }
 
   beforeEach(() => {
@@ -89,5 +89,18 @@ describe('POST /api/children/:childId/specialists', () => {
 
     expect(db.prepare('SELECT * FROM child_specialist_links').all())
       .toEqual([first.body.link]);
+  });
+    test.each([
+    ['an unregistered email', 'unknown@example.test'],
+    ['a parent account', 'parent@example.test']
+  ])('rejects %s without creating a link', async (_label, email) => {
+    const response = await linkSpecialist(parent, { ...body, email });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'No registered specialist found for this email'
+    });
+    expect(db.prepare('SELECT * FROM child_specialist_links').all())
+      .toEqual([]);
   });
 });
