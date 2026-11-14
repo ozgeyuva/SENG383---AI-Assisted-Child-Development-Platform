@@ -1,7 +1,7 @@
 const express = require('express');
 const { createRequireAuth } = require('../middleware/auth');
 const { createRequireRole } = require('../middleware/access');
-
+const { removeChildSpecialistLink } = require('../db/childSpecialistLinks');
 function createChildrenRouter(db, options = {}) {
   const router = express.Router();
 
@@ -241,6 +241,37 @@ for (const [field, value, label] of fields) {
       `).all(child.id);
 
       return res.status(200).json({ specialists });
+    } catch (error) {
+      return next(error);
+    }
+  });
+    router.delete('/:childId/specialists/:specialistId', (req, res, next) => {
+    try {
+      const { childId, specialistId } = req.params;
+
+      for (const id of [childId, specialistId]) {
+        if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) {
+          return res.status(400).json({ error: 'Invalid child or specialist ID' });
+        }
+      }
+
+      const child = db.prepare(`
+        SELECT id FROM children WHERE id = ? AND parent_id = ?
+      `).get(Number(childId), req.auth.userId);
+
+      if (!child) {
+        return res.status(403).json({ error: 'Child profile is not accessible' });
+      }
+
+      if (req.body?.confirmed !== true) {
+        return res.status(400).json({ error: 'Unlink confirmation is required' });
+      }
+
+      if (!removeChildSpecialistLink(db, child.id, Number(specialistId))) {
+        return res.status(404).json({ error: 'Specialist link not found' });
+      }
+
+      return res.status(204).end();
     } catch (error) {
       return next(error);
     }
