@@ -139,4 +139,44 @@ describe('Specialist link lists', () => {
     expect(parentList.status).toBe(401);
     expect(specialistList.status).toBe(401);
   });
+    test('rejects the same token and child URL after the specialist link is removed', async () => {
+    addLink(child.id, specialist.id);
+
+    const path = `${specialistChildrenPath}/${child.id}`;
+    const token = jwt.sign({ role: specialist.role }, jwtSecret, {
+      subject: String(specialist.id),
+      expiresIn: '1h',
+      algorithm: 'HS256'
+    });
+    const authorization = `Bearer ${token}`;
+
+    const before = await request(app).get(path).set('Authorization', authorization);
+
+    expect(before.status).toBe(200);
+    expect(before.body).toEqual({
+      child: { ...child, specialist_type: 'Teacher' }
+    });
+
+    db.prepare(`
+      DELETE FROM child_specialist_links
+      WHERE child_id = ? AND specialist_id = ?
+    `).run(child.id, specialist.id);
+
+    const after = await request(app).get(path).set('Authorization', authorization);
+
+    expect(after.status).toBe(403);
+    expect(after.body).toEqual({ error: 'Child profile is not accessible' });
+        const listAfter = await request(app)
+      .get(specialistChildrenPath)
+      .set('Authorization', authorization);
+
+    expect(listAfter.status).toBe(200);
+    expect(listAfter.body).toEqual({ children: [] });
+  });
+
+  test('rejects an invalid child ID on the specialist profile route', async () => {
+    const response = await getAs(`${specialistChildrenPath}/abc`, specialist);
+
+    expect(response.status).toBe(400);
+  });
 });
