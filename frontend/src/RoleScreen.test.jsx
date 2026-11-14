@@ -12,10 +12,15 @@ afterEach(() => {
 test.each([
   ['specialist', 'Specialist Dashboard', 'Welcome, Demo User!'],
   ['child', 'My Dashboard', 'Welcome, Demo User!'],
-])('shows the %s screen without parent controls', (role, title, heading) => {
+])('shows the %s screen without parent controls', async (role, title, heading) => {
   const fetchMock = vi.fn()
   vi.stubGlobal('fetch', fetchMock)
-
+  if (role === 'specialist') {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ children: [] }),
+    })
+  }
   render(
     <App
       user={{
@@ -41,7 +46,21 @@ test.each([
     screen.queryByRole('combobox', { name: /select your child/i })
   ).not.toBeInTheDocument()
 
-  expect(fetchMock).not.toHaveBeenCalled()
+    if (role === 'specialist') {
+    expect(
+      await screen.findByText('No children linked to your account yet.')
+    ).toBeInTheDocument()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/specialists/me/children',
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer test-only-token' },
+      })
+    )
+  } else {
+    expect(fetchMock).not.toHaveBeenCalled()
+  }
 })
 
 test('returns to login after logout from a child account', async () => {

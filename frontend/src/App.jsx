@@ -93,7 +93,11 @@ function SessionApp({ user = null, token = null }) {
         <ParentScreen user={session.user} token={session.token} />
       </ChildSelectionProvider>
     ) : session.user.role === 'specialist' ? (
-      <SpecialistDashboard user={session.user} />
+            <SpecialistDashboard
+        key={sessionKey}
+        user={session.user}
+        token={session.token}
+      />
     ) : session.user.role === 'child' ? (
       <ChildDashboard user={session.user} />
     ) : (
