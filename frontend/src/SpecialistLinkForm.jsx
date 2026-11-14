@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function SpecialistLinkForm({ childId, token }) {
+function SpecialistLinkForm({ childId, token, onLinked }) {
   const [email, setEmail] = useState('')
   const [specialistType, setSpecialistType] = useState('')
   const [saving, setSaving] = useState(false)
@@ -38,6 +38,7 @@ function SpecialistLinkForm({ childId, token }) {
       setSuccess('Specialist linked successfully.')
       setEmail('')
       setSpecialistType('')
+            onLinked?.()
     } catch {
       setError('Could not reach the server. Please try again.')
     } finally {
