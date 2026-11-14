@@ -103,4 +103,44 @@ describe('POST /api/children/:childId/specialists', () => {
     expect(db.prepare('SELECT * FROM child_specialist_links').all())
       .toEqual([]);
   });
+    test.each([
+    ['removes a confirmed link for the owner', true, true, 204, 0],
+    ['preserves the link when confirmation is false', false, true, 400, 1],
+    ['preserves the link when confirmation is missing', undefined, true, 400, 1],
+    ['preserves the link when another parent confirms', true, false, 403, 1]
+  ])('%s', async (_name, confirmed, isOwner, expectedStatus, expectedCount) => {
+    const created = await linkSpecialist(parent);
+    expect(created.status).toBe(201);
+
+    const { specialist_id } = created.body.link;
+    let userId = parent.id;
+
+    if (!isOwner) {
+      const otherParent = db.prepare(`
+        INSERT INTO users (first_name, last_name, email, password_hash, role)
+        VALUES ('Other', 'Parent', 'other-parent@example.test', 'test-only', 'parent')
+      `).run();
+      userId = Number(otherParent.lastInsertRowid);
+    }
+
+    const token = jwt.sign({ role: 'parent' }, jwtSecret, {
+      subject: String(userId),
+      expiresIn: '1h',
+      algorithm: 'HS256'
+    });
+
+    const response = await request(app)
+      .delete(`/api/children/${childId}/specialists/${specialist_id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ confirmed });
+
+    expect(response.status).toBe(expectedStatus);
+
+    const { count } = db.prepare(`
+      SELECT COUNT(*) AS count FROM child_specialist_links
+      WHERE child_id = ? AND specialist_id = ?
+    `).get(childId, specialist_id);
+
+    expect(count).toBe(expectedCount);
+  });
 });
