@@ -144,8 +144,28 @@ test('clears selection and old children when the account changes', async () => {
   }
 
   fetchMock
-    .mockResolvedValueOnce(childrenResponse(children))
-    .mockResolvedValueOnce(childrenResponse([otherChild]))
+      fetchMock.mockImplementation(async (url, options) => {
+    if (url === '/api/children/10/specialists') {
+      return {
+        ok: true,
+        json: async () => ({ specialists: [] }),
+      }
+    }
+
+    if (url === '/api/children') {
+      const token = options.headers.Authorization
+
+      if (token === 'Bearer parent-token') {
+        return childrenResponse(children)
+      }
+
+      if (token === 'Bearer other-parent-token') {
+        return childrenResponse([otherChild])
+      }
+    }
+
+    throw new Error(`Unexpected fetch request: ${url}`)
+  })
 
   const { rerender } = render(
     <App user={parent} token="parent-token" />
