@@ -24,7 +24,32 @@ function createSpecialistsRouter(db, options = {}) {
       return next(error);
     }
   });
+  router.get('/me/children/:childId', (req, res, next) => {
+    try {
+      const { childId } = req.params;
+      const id = Number(childId);
 
+      if (!/^[1-9]\d*$/.test(childId) || !Number.isSafeInteger(id)) {
+        return res.status(400).json({ error: 'Invalid child ID' });
+      }
+
+      const child = db.prepare(`
+        SELECT children.id, children.first_name, children.last_name,
+               children.date_of_birth, children.grade, links.specialist_type
+        FROM child_specialist_links AS links
+        JOIN children ON children.id = links.child_id
+        WHERE links.specialist_id = ? AND links.child_id = ?
+      `).get(req.auth.userId, id);
+
+      if (!child) {
+        return res.status(403).json({ error: 'Child profile is not accessible' });
+      }
+
+      return res.status(200).json({ child });
+    } catch (error) {
+      return next(error);
+    }
+  });
   return router;
 }
 
