@@ -2,6 +2,7 @@ import { useChildSelection } from './ChildSelectionContext'
 import ChildSelector from './ChildSelector'
 import logo from './assets/lumi-logo.png'
 import LinkedSpecialists from './LinkedSpecialists'
+import EventForm from './EventForm'
 
 function ParentDashboard({ user,
   token,
@@ -91,6 +92,14 @@ function ParentDashboard({ user,
 
         </article>
       </section>
+
+      {selectedChild && token && (
+        <section className="action-card">
+          <h2>Add an event for {selectedChild.first_name}</h2>
+          <EventForm key={selectedChild.id} childId={selectedChild.id} token={token} />
+        </section>
+        )}
+
     </main>
   )
 }
