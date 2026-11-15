@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import logo from './assets/lumi-logo.png'
+import ChildTaskPanel from './ChildTaskPanel'
 
 function SpecialistDashboard({ user, token }) {
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
@@ -7,6 +8,8 @@ function SpecialistDashboard({ user, token }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [selectedChildId, setSelectedChildId] = useState(null)
+  const selectedChild = children.find(child => child.id === selectedChildId)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -97,12 +100,28 @@ function SpecialistDashboard({ user, token }) {
                   {child.first_name} {child.last_name}
                   {' · '}Grade {child.grade}
                   {' · '}{child.specialist_type}
+                  {' '}
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    aria-label={`Open tasks for ${child.first_name} ${child.last_name}`}
+                    aria-pressed={child.id === selectedChildId}
+                    onClick={() => setSelectedChildId(child.id)}
+                  >
+                    Open Tasks
+                  </button>
                 </li>
               ))}
             </ul>
           )
         )}
       </section>
+      {!loading && !error && selectedChild && (
+        <section aria-label={`Tasks for ${selectedChild.first_name} ${selectedChild.last_name}`}>
+          <h2>{selectedChild.first_name} {selectedChild.last_name}’s Tasks</h2>
+          <ChildTaskPanel child={selectedChild} token={token} />
+        </section>
+      )}
     </main>
   )
 }

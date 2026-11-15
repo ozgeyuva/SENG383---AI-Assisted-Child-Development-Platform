@@ -6,10 +6,29 @@ function createTasksRouter(db, options = {}) {
   const router = express.Router();
 
   router.use(createRequireAuth(options));
-  // Current MVP scope: parent assignment only. Specialist links belong to M2.
-  router.use(createRequireRole(db, ['parent']));
+  const requireTaskAccessRole = createRequireRole(db, ['parent', 'specialist']);
 
-  router.get('/', (req, res, next) => {
+  function findAccessibleChild(childId, { role, userId }) {
+    const query = role === 'parent'
+      ? 'SELECT 1 FROM children WHERE id = ? AND parent_id = ?'
+      : 'SELECT 1 FROM child_specialist_links WHERE child_id = ? AND specialist_id = ?';
+    return db.prepare(query).get(childId, userId);
+  }
+
+  const listTasks = db.transaction((childId, auth) => {
+    if (!findAccessibleChild(childId, auth)) return null;
+
+    const assignerFilter = auth.role === 'specialist' ? 'AND assigned_by = ?' : '';
+    const params = auth.role === 'specialist' ? [childId, auth.userId] : [childId];
+    return db.prepare(`
+      SELECT id, child_id, assigned_by, title, description, category,
+             due_date, status, created_at, completed_at
+      FROM tasks WHERE child_id = ? ${assignerFilter}
+      ORDER BY due_date ASC, id ASC
+    `).all(...params);
+  });
+
+  router.get('/', requireTaskAccessRole, (req, res, next) => {
     try {
       const { childId } = req.query;
       if (typeof childId !== 'string' || !/^[1-9]\d*$/.test(childId) ||
@@ -17,26 +36,18 @@ function createTasksRouter(db, options = {}) {
         return res.status(400).json({ error: 'Invalid child ID', field: 'childId' });
       }
 
-      const child = db.prepare(
-        'SELECT id FROM children WHERE id = ? AND parent_id = ?'
-      ).get(Number(childId), req.auth.userId);
-      if (!child) {
+      const tasks = listTasks(Number(childId), req.auth);
+      if (!tasks) {
         return res.status(403).json({ error: 'Child profile is not accessible' });
       }
 
-      const tasks = db.prepare(`
-        SELECT id, child_id, assigned_by, title, description, category,
-               due_date, status, created_at, completed_at
-        FROM tasks WHERE child_id = ?
-        ORDER BY due_date ASC, id ASC
-      `).all(child.id);
       return res.status(200).json({ tasks });
     } catch (error) {
       return next(error);
     }
   });
 
-  router.get('/categories', (req, res, next) => {
+  router.get('/categories', requireTaskAccessRole, (req, res, next) => {
     try {
       const categories = db.prepare('SELECT name FROM task_categories ORDER BY name')
         .all().map(category => category.name);
@@ -46,7 +57,7 @@ function createTasksRouter(db, options = {}) {
     }
   });
 
-  router.post('/', (req, res, next) => {
+  router.post('/', requireTaskAccessRole, (req, res, next) => {
     try {
       const { child_id, title, description, category, due_date } = req.body || {};
 
@@ -57,11 +68,7 @@ function createTasksRouter(db, options = {}) {
         });
       }
 
-      const child = db.prepare(`
-        SELECT id FROM children WHERE id = ? AND parent_id = ?
-      `).get(child_id, req.auth.userId);
-
-      if (!child) {
+      if (!findAccessibleChild(child_id, req.auth)) {
         return res.status(403).json({ error: 'Child profile is not accessible' });
       }
 
@@ -101,16 +108,18 @@ function createTasksRouter(db, options = {}) {
         return res.status(400).json({ error: 'Invalid category.', field: 'category' });
       }
 
-      const result = db.prepare(`
-        INSERT INTO tasks (child_id, assigned_by, title, description, category, due_date)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(
-        child.id, req.auth.userId, title.trim(), description.trim(),
-        selectedCategory, dueDate
-      );
+      const task = db.transaction(() => {
+        if (!findAccessibleChild(child_id, req.auth)) return null;
 
-      const task = db.prepare('SELECT * FROM tasks WHERE id = ?')
-        .get(result.lastInsertRowid);
+        return db.prepare(`
+          INSERT INTO tasks (child_id, assigned_by, title, description, category, due_date)
+          VALUES (?, ?, ?, ?, ?, ?)
+          RETURNING *
+        `).get(child_id, req.auth.userId, title.trim(), description.trim(), selectedCategory, dueDate);
+      }).immediate();
+      if (!task) {
+        return res.status(403).json({ error: 'Child profile is not accessible' });
+      }
 
       return res.status(201).json({ task });
     } catch (error) {

@@ -3,6 +3,7 @@ const os = require('node:os');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const { createDatabase } = require('../src/db/database');
+const { completeTaskForChild } = require('../src/db/tasks');
 const { seedUser, seedChildren, seedTasks } = require('../src/db/seed');
 
 describe('Tasks database', () => {
@@ -102,6 +103,37 @@ describe('Tasks database', () => {
     seedTasks(db);
     expect(db.prepare('SELECT * FROM tasks').all()).toEqual(before);
     expect(before).toHaveLength(1);
+  });
+
+  test('stores completion status and time together for the assigned child', () => {
+    const taskId = insertTask().lastInsertRowid;
+    const completed = completeTaskForChild(db, taskId, childId);
+
+    expect(completed).toMatchObject({
+      id: taskId, child_id: childId, status: 'Completed',
+      completed_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    });
+    expect(db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId)).toEqual(completed);
+  });
+
+  test('preserves the original completion time when completion is requested again', () => {
+    const taskId = insertTask().lastInsertRowid;
+    const originalTime = '2026-01-01 09:00:00';
+    db.prepare("UPDATE tasks SET status = 'Completed', completed_at = ? WHERE id = ?")
+      .run(originalTime, taskId);
+
+    expect(completeTaskForChild(db, taskId, childId)).toMatchObject({
+      status: 'Completed', completed_at: originalTime
+    });
+  });
+
+  test('leaves a task untouched when it belongs to another child', () => {
+    const taskId = insertTask().lastInsertRowid;
+    const findTask = db.prepare('SELECT * FROM tasks WHERE id = ?');
+    const originalTask = findTask.get(taskId);
+
+    expect(completeTaskForChild(db, taskId, childId + 1)).toBeNull();
+    expect(findTask.get(taskId)).toEqual(originalTask);
   });
 
   test('reopening an existing database preserves users, children and tasks', () => {

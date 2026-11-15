@@ -117,25 +117,25 @@ The children API allows parents only and preserves ownership checks.
 
 Specialist-child access and child-account mapping are not yet implemented.
 
-## Task assignment (KAN-117, parent MVP)
+## Task assignment (KAN-117)
 
-KAN-128 adds parent-authenticated `GET /api/tasks?childId=1`, returning
-`{ "tasks": [...] }` ordered by due_date then id. The parent must own the
-selected child and receives all their tasks regardless of assigner. An owned
-child without tasks returns an empty array. Missing/invalid childId returns
-400, missing/invalid authentication 401, inaccessible children and non-parent
-accounts 403. Specialist listing remains outside the current parent MVP.
+KAN-128 adds `GET /api/tasks?childId=1` for authenticated parents and specialists.
+It returns `{ "tasks": [...] }` ordered by due_date then id. Parents receive all
+tasks for their own child. Specialists receive only tasks they assigned to the
+selected child and must have a current link to that child. A permitted query
+with no matching tasks returns an empty array. Missing or invalid childId
+returns 400. Missing or invalid authentication returns 401. Inaccessible
+children and accounts with the child role receive 403.
 
 KAN-116 adds authenticated `GET /api/tasks/categories`, returning
 `{ "categories": ["Academic", "Extracurricular", "Health"] }` from the shared
-task_categories table. It uses the same parent-only access policy as assignment.
+task_categories table. Parents and specialists can read the shared categories.
 
 POST /api/tasks
 
-Requires a parent JWT in the Authorization header. This branch depends on
-the KAN-118 task migration. The current MVP implements parent assignment;
-linked-specialist assignment remains outside this MVP and depends on M2.
-Specialist and child accounts receive HTTP 403.
+Requires a parent or specialist JWT in the Authorization header. Parents can
+assign tasks to their own children. Specialists can assign tasks to children
+with a current link in `child_specialist_links`.
 
 Example JSON request:
 
@@ -149,8 +149,8 @@ Example JSON request:
 }
 ```
 
-All six fields are required. child_id must be a positive integer identifying
-one of the authenticated parent's children. Text fields are trimmed. Category
+All five fields are required. child_id must be a positive integer identifying
+a child accessible to the assigner. Text fields are trimmed. Category
 must exist in task_categories; due_date must be a valid YYYY-MM-DD calendar
 date. No future-only restriction is imposed on due dates.
 
@@ -163,8 +163,8 @@ Responses:
 - 400: Invalid or missing fields; includes error and field. KAN-121 also returns
   an errors map for all missing, blank or non-text task details in one response.
 - 401: Missing, invalid or expired token, or a deleted account.
-- 403: Non-parent account, another parent's child or nonexistent child.
+- 403: Child account, nonexistent child or a child outside the assigner's access.
 
 Rejected requests do not create tasks. The API rechecks the stored account
-role and child ownership on every request. Task listing and completion are
+role and child ownership or specialist linkage on every request. Task listing and completion are
 separate work items.
