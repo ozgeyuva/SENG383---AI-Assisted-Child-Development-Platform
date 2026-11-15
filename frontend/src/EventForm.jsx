@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const categories = ['School', 'Extracurricular', 'Health', 'Other']
 
-function EventForm({ childId, token }) {
+function EventForm({ childId, token, onCreated }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -50,6 +50,7 @@ function EventForm({ childId, token }) {
 
       form.reset()
       setSuccess('Event added successfully.')
+      onCreated?.()
     } catch {
       setError('Could not connect to the server. Please try again.')
     } finally {
