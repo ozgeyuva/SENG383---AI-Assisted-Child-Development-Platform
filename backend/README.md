@@ -129,7 +129,7 @@ children and accounts with the child role receive 403.
 
 KAN-116 adds authenticated `GET /api/tasks/categories`, returning
 `{ "categories": ["Academic", "Extracurricular", "Health"] }` from the shared
-task_categories table. This endpoint currently requires a parent account.
+task_categories table. Parents and specialists can read the shared categories.
 
 POST /api/tasks
 

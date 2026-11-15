@@ -191,9 +191,10 @@ describe('Task assignment API', () => {
       .set('Authorization', `Bearer ${tokenFor(parent)}`)).status).toBe(403);
   });
 
-  test('returns the shared category list for an authenticated parent', async () => {
+  test.each(['parent', 'specialist'])('returns shared task categories for an authenticated %s', async role => {
+    const user = role === 'parent' ? parent : specialist;
     const response = await request(app).get('/api/tasks/categories')
-      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+      .set('Authorization', `Bearer ${tokenFor(user)}`);
     expect(response.status).toBe(200);
     expect(response.body.categories).toEqual(
       db.prepare('SELECT name FROM task_categories ORDER BY name').all().map(row => row.name)
@@ -203,7 +204,7 @@ describe('Task assignment API', () => {
   test('protects category access with the existing authentication and role policy', async () => {
     expect((await request(app).get('/api/tasks/categories')).status).toBe(401);
     expect((await request(app).get('/api/tasks/categories')
-      .set('Authorization', `Bearer ${tokenFor(specialist)}`)).status).toBe(403);
+      .set('Authorization', `Bearer ${tokenFor(childAccount)}`)).status).toBe(403);
   });
 
   test('assigns an owned child a task and derives identity and initial status on the server', async () => {
