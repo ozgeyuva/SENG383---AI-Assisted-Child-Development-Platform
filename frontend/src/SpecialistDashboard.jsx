@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import logo from './assets/lumi-logo.png'
+import EventForm from './EventForm'
 
 function SpecialistDashboard({ user, token }) {
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
@@ -97,6 +98,10 @@ function SpecialistDashboard({ user, token }) {
                   {child.first_name} {child.last_name}
                   {' · '}Grade {child.grade}
                   {' · '}{child.specialist_type}
+                  <details>
+                    <summary>Add an event for {child.first_name}</summary>
+                    <EventForm childId={child.id} token={token} />
+                  </details>
                 </li>
               ))}
             </ul>
