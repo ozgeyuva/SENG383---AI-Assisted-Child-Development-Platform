@@ -108,7 +108,28 @@ function seedTasks(db) {
         child.id, child.parent_id, 'Read for 15 minutes', '2026-11-08'
     );
 }
-
+function seedChildSpecialistLinks(db) {
+    db.prepare(`
+        INSERT INTO child_specialist_links (
+            child_id, specialist_id, specialist_type
+        )
+        SELECT children.id, specialist.id, ?
+        FROM children
+        JOIN users AS parent ON parent.id = children.parent_id
+        JOIN users AS specialist
+          ON specialist.email = ? AND specialist.role = 'specialist'
+        WHERE parent.email = ? AND parent.role = 'parent'
+          AND children.first_name = ?
+          AND children.last_name = ?
+          AND children.date_of_birth = ?
+        ORDER BY children.id
+        LIMIT 1
+        ON CONFLICT(child_id, specialist_id) DO NOTHING
+    `).run(
+        'Teacher', 'specialist@example.test', 'parent@example.test',
+        'Deniz', 'Demo', '2017-05-10'
+    );
+}
 if (require.main === module) {
     const dataDirectory = path.join(__dirname, '..', '..', 'data');
     fs.mkdirSync(dataDirectory, { recursive: true });
@@ -118,8 +139,8 @@ if (require.main === module) {
     try {
     seedUser(db);
     seedChildren(db);
+    seedChildSpecialistLinks(db);
     seedTasks(db);
-
     console.table(
         db.prepare('SELECT id, email, role FROM users').all()
     );
@@ -132,4 +153,4 @@ if (require.main === module) {
 }
 }
 
-module.exports = { seedUser, seedChildren, seedTasks };
+module.exports = { seedUser, seedChildren, seedTasks, seedChildSpecialistLinks };

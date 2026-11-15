@@ -2,6 +2,7 @@ const express = require('express');
 const { createAuthRouter } = require('./routes/auth');
 const { createChildrenRouter } = require('./routes/children');
 const { createTasksRouter } = require('./routes/tasks');
+const { createSpecialistsRouter } = require('./routes/specialists');
 function createApp(db, options = {}) {
     const app = express();
 
@@ -9,6 +10,7 @@ function createApp(db, options = {}) {
     app.use('/api/auth', createAuthRouter(db, options));
     app.use('/api/children', createChildrenRouter(db, options));
     app.use('/api/tasks', createTasksRouter(db, options));
+        app.use('/api/specialists', createSpecialistsRouter(db, options));
     app.use((error, req, res, next) => {
         if (error.type === 'entity.parse.failed') {
             return res.status(400).json({ error: 'Invalid JSON data' });

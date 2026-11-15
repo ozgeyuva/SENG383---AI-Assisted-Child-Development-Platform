@@ -1,6 +1,7 @@
 import { useChildSelection } from './ChildSelectionContext'
 import ChildSelector from './ChildSelector'
 import logo from './assets/lumi-logo.png'
+import LinkedSpecialists from './LinkedSpecialists'
 
 function ParentDashboard({ user,
   token,
@@ -62,6 +63,13 @@ function ParentDashboard({ user,
           >
             + Add My Children
           </button>
+          {selectedChild && token && (
+  <LinkedSpecialists
+  key={selectedChild.id}
+  childId={selectedChild.id}
+  token={token}
+/>
+)}
         </article>
 
         <article className="action-card">
