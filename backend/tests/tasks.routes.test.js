@@ -53,6 +53,47 @@ describe('Task assignment API', () => {
 
   afterEach(() => db.close());
 
+  test('lists only tasks assigned by the current linked specialist for the selected child', async () => {
+    const otherSpecialist = createUser('specialist', 'another-specialist@example.test');
+    const otherChildId = Number(db.prepare(`
+      INSERT INTO children (parent_id, first_name, last_name, date_of_birth, grade)
+      VALUES (?, 'Other', 'Child', '2018-05-10', '3')
+    `).run(otherParent.id).lastInsertRowid);
+    const link = db.prepare(`
+      INSERT INTO child_specialist_links (child_id, specialist_id, specialist_type)
+      VALUES (?, ?, 'Educator')
+    `);
+    link.run(childId, specialist.id);
+    link.run(childId, otherSpecialist.id);
+    link.run(otherChildId, specialist.id);
+
+    const specialistToken = tokenFor(specialist);
+    const list = () => request(app).get(`/api/tasks?childId=${childId}`)
+      .set('Authorization', `Bearer ${specialistToken}`);
+
+    const otherAssignments = [
+      await assign(),
+      await assign(validTask, tokenFor(otherSpecialist)),
+      await assign({ ...validTask, child_id: otherChildId }, specialistToken)
+    ];
+    expect(otherAssignments.map(response => response.status)).toEqual([201, 201, 201]);
+    const empty = await list();
+    expect(empty.status).toBe(200);
+    expect(empty.body).toEqual({ tasks: [] });
+
+    const later = await assign({ ...validTask, due_date: '2026-11-10' }, specialistToken);
+    const earlier = await assign(validTask, specialistToken);
+    expect([later.status, earlier.status]).toEqual([201, 201]);
+    const response = await list();
+    expect(response.status).toBe(200);
+    expect(response.body.tasks).toEqual([earlier.body.task, later.body.task]);
+
+    const unlinked = await request(app).delete(`/api/children/${childId}/specialists/${specialist.id}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`).send({ confirmed: true });
+    expect(unlinked.status).toBe(204);
+    expect((await list()).status).toBe(403);
+  });
+
   test('allows a linked specialist to assign a task until the parent removes the link', async () => {
     const linkUrl = `/api/children/${childId}/specialists`;
     const parentAuth = `Bearer ${tokenFor(parent)}`;
