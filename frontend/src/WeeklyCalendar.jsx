@@ -87,7 +87,12 @@ export default function WeeklyCalendar({ childId, token, refresh }) {
             {dayEvents.length > 0 && (
               <ul>
                 {dayEvents.map(event => (
-                  <li key={event.id}>{event.event_time} · {event.title}</li>
+                  <li key={event.id}>
+                    {event.event_time} · {event.title}{' '}
+                    <span className="event-category" data-category={event.category}>
+                        {event.category}
+                    </span>
+                </li>
                 ))}
               </ul>
             )}
