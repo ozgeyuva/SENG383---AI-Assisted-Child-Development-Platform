@@ -1,6 +1,7 @@
 const express = require('express');
 const { createRequireAuth } = require('../middleware/auth');
 const { createRequireRole } = require('../middleware/access');
+const { findChildIdForUser } = require('../db/childAccounts');
 
 const categories = ['School', 'Extracurricular', 'Health', 'Other'];
 
@@ -64,6 +65,64 @@ function createEventRouter(db, options = {}) {
         }
     );
 
+     router.get(
+        '/',
+        createRequireAuth(options),
+        createRequireRole(db, ['parent', 'specialist', 'child']),
+        (req, res, next) => {
+            try {
+                const { childId, weekStart } = req.query;
+                const id = Number(childId);
+
+                if (typeof childId !== 'string' || !/^[1-9]\d*$/.test(childId) ||
+                    !Number.isSafeInteger(id)) {
+                    return res.status(400).json({ error: 'Invalid child ID.' });
+                }
+
+                if (typeof weekStart !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+                    return res.status(400).json({ error: 'Use YYYY-MM-DD for weekStart.' });
+                }
+
+                const monday = new Date(weekStart + 'T00:00:00.000Z');
+                if (Number.isNaN(monday.getTime()) ||
+                    monday.toISOString().slice(0, 10) !== weekStart ||
+                    monday.getUTCDay() !== 1) {
+                    return res.status(400).json({ error: 'weekStart must be a valid Monday.' });
+                }
+
+                const { userId, role } = req.auth;
+                let allowed;
+
+                if (role === 'parent') {
+                    allowed = db.prepare(
+                        'SELECT id FROM children WHERE id = ? AND parent_id = ?'
+                    ).get(id, userId);
+                } else if (role === 'specialist') {
+                    allowed = db.prepare(
+                        'SELECT child_id FROM child_specialist_links WHERE child_id = ? AND specialist_id = ?'
+                    ).get(id, userId);
+                } else {
+                    allowed = findChildIdForUser(db, userId) === id;
+                }
+
+                if (!allowed) {
+                    return res.status(403).json({ error: 'Child profile is not accessible.' });
+                }
+
+                const events = db.prepare(`
+                    SELECT id, child_id, title, event_date, event_time, category
+                    FROM events
+                    WHERE child_id = ?
+                      AND event_date BETWEEN ? AND date(?, '+6 days')
+                    ORDER BY event_date, event_time, id
+                `).all(id, weekStart, weekStart);
+
+                return res.json({ events });
+            } catch (error) {
+                return next(error);
+            }
+        }
+    );
     return router;
 
 }
