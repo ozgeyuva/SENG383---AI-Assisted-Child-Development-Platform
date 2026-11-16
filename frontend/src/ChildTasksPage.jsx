@@ -1,5 +1,6 @@
 import { useChildSelection } from './ChildSelectionContext'
 import ChildTaskPanel from './ChildTaskPanel'
+import logo from './assets/lumi-logo.png'
 
 function ChildTasksPage({ onBack, token }) {
   const { selectedChild } = useChildSelection()
@@ -22,8 +23,7 @@ function ChildTasksPage({ onBack, token }) {
   return (
     <main className="dashboard">
       <header className="dashboard-header">
-        <span className="brand">lumi</span>
-
+        <img className="brand-logo" src={logo} alt="Lumi" />
         <button
           type="button"
           className="secondary-button"

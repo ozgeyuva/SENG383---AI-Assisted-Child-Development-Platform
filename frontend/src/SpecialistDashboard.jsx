@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import logo from './assets/lumi-logo.png'
+import ChildSchedule from './ChildSchedule'
 import ChildTaskPanel from './ChildTaskPanel'
 
 function SpecialistDashboard({ user, token }) {
@@ -100,6 +101,10 @@ function SpecialistDashboard({ user, token }) {
                   {child.first_name} {child.last_name}
                   {' · '}Grade {child.grade}
                   {' · '}{child.specialist_type}
+                  <details>
+                    <summary>Add an event for {child.first_name}</summary>
+                    <ChildSchedule childId={child.id} token={token} />
+                  </details>
                   {' '}
                   <button
                     type="button"

@@ -13,7 +13,8 @@ function createDatabase(filename = ':memory:') {
   '002_create_children.sql',
   '003_create_tasks.sql',
   '004_create_child_accounts.sql',
-  '005_create_child_specialist_links.sql'
+  '005_create_child_specialist_links.sql',
+  '006_create_events.sql'
 ];
 
     db.transaction(() => {
