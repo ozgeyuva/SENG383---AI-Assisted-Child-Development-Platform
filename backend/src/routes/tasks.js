@@ -6,7 +6,6 @@ function createTasksRouter(db, options = {}) {
   const router = express.Router();
 
   router.use(createRequireAuth(options));
-  const requireParent = createRequireRole(db, ['parent']);
   const requireTaskAccessRole = createRequireRole(db, ['parent', 'specialist']);
 
   function findAccessibleChild(childId, { role, userId }) {
@@ -48,7 +47,7 @@ function createTasksRouter(db, options = {}) {
     }
   });
 
-  router.get('/categories', requireParent, (req, res, next) => {
+  router.get('/categories', requireTaskAccessRole, (req, res, next) => {
     try {
       const categories = db.prepare('SELECT name FROM task_categories ORDER BY name')
         .all().map(category => category.name);

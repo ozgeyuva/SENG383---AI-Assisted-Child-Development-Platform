@@ -1,11 +1,8 @@
 import { useChildSelection } from './ChildSelectionContext'
-import TaskForm from './TaskForm'
-import TaskList from './TaskList'
-import { useState } from 'react'
+import ChildTaskPanel from './ChildTaskPanel'
 
 function ChildTasksPage({ onBack, token }) {
   const { selectedChild } = useChildSelection()
-  const [tasksVersion, setTasksVersion] = useState(0)
 
   if (!selectedChild) {
     return (
@@ -44,31 +41,7 @@ function ChildTasksPage({ onBack, token }) {
         Grade {selectedChild.grade}
       </p>
 
-      <div className="child-tasks-layout">
-        <section className="action-card">
-          <h2>Task List</h2>
-          <TaskList
-            key={JSON.stringify([selectedChild.id, token, tasksVersion])}
-            childId={selectedChild.id}
-            token={token}
-          />
-        </section>
-
-        <aside className="action-card">
-          <h2>Assign a New Task</h2>
-          <p>
-            Tasks created here will be assigned to{' '}
-            {selectedChild.first_name} {selectedChild.last_name}.
-          </p>
-
-          <TaskForm
-            key={JSON.stringify([selectedChild.id, token])}
-            childId={selectedChild.id}
-            token={token}
-            onCreated={() => setTasksVersion(previous => previous + 1)}
-          />
-        </aside>
-      </div>
+      <ChildTaskPanel child={selectedChild} token={token} />
     </main>
   )
 }
