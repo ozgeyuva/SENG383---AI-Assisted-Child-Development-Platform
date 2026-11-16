@@ -53,6 +53,34 @@ describe('Task assignment API', () => {
 
   afterEach(() => db.close());
 
+  test('allows a linked specialist to assign a task until the parent removes the link', async () => {
+    const linkUrl = `/api/children/${childId}/specialists`;
+    const parentAuth = `Bearer ${tokenFor(parent)}`;
+    const specialistToken = tokenFor(specialist);
+    const linked = await request(app).post(linkUrl)
+      .set('Authorization', parentAuth)
+      .send({ email: 'specialist@example.test', specialist_type: 'Educator' });
+    expect(linked.status).toBe(201);
+
+    const created = await assign({
+      ...validTask, assigned_by: parent.id, status: 'Completed'
+    }, specialistToken);
+    expect(created.status).toBe(201);
+    expect(created.body.task).toMatchObject({
+      ...validTask, assigned_by: specialist.id, status: 'Not Started', completed_at: null
+    });
+    const parentList = await request(app).get(`/api/tasks?childId=${childId}`)
+      .set('Authorization', parentAuth);
+    expect(parentList.body.tasks).toEqual([created.body.task]);
+
+    const unlinked = await request(app).delete(`${linkUrl}/${specialist.id}`)
+      .set('Authorization', parentAuth).send({ confirmed: true });
+    expect(unlinked.status).toBe(204);
+
+    expect((await assign(validTask, specialistToken)).status).toBe(403);
+    expect(db.prepare('SELECT * FROM tasks').all()).toEqual([created.body.task]);
+  });
+
   test.each(['title', 'description', 'category', 'due_date'].flatMap(field =>
     [undefined, null, '', '   ', 123, [], {}].map(value => [field, value])
   ))('rejects incomplete %s (%j) and preserves existing tasks', async (field, value) => {
