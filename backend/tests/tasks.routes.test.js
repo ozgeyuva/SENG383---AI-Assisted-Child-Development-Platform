@@ -53,6 +53,75 @@ describe('Task assignment API', () => {
 
   afterEach(() => db.close());
 
+  test('lists only tasks assigned by the current linked specialist for the selected child', async () => {
+    const otherSpecialist = createUser('specialist', 'another-specialist@example.test');
+    const otherChildId = Number(db.prepare(`
+      INSERT INTO children (parent_id, first_name, last_name, date_of_birth, grade)
+      VALUES (?, 'Other', 'Child', '2018-05-10', '3')
+    `).run(otherParent.id).lastInsertRowid);
+    const link = db.prepare(`
+      INSERT INTO child_specialist_links (child_id, specialist_id, specialist_type)
+      VALUES (?, ?, 'Educator')
+    `);
+    link.run(childId, specialist.id);
+    link.run(childId, otherSpecialist.id);
+    link.run(otherChildId, specialist.id);
+
+    const specialistToken = tokenFor(specialist);
+    const list = () => request(app).get(`/api/tasks?childId=${childId}`)
+      .set('Authorization', `Bearer ${specialistToken}`);
+
+    const otherAssignments = [
+      await assign(),
+      await assign(validTask, tokenFor(otherSpecialist)),
+      await assign({ ...validTask, child_id: otherChildId }, specialistToken)
+    ];
+    expect(otherAssignments.map(response => response.status)).toEqual([201, 201, 201]);
+    const empty = await list();
+    expect(empty.status).toBe(200);
+    expect(empty.body).toEqual({ tasks: [] });
+
+    const later = await assign({ ...validTask, due_date: '2026-11-10' }, specialistToken);
+    const earlier = await assign(validTask, specialistToken);
+    expect([later.status, earlier.status]).toEqual([201, 201]);
+    const response = await list();
+    expect(response.status).toBe(200);
+    expect(response.body.tasks).toEqual([earlier.body.task, later.body.task]);
+
+    const unlinked = await request(app).delete(`/api/children/${childId}/specialists/${specialist.id}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`).send({ confirmed: true });
+    expect(unlinked.status).toBe(204);
+    expect((await list()).status).toBe(403);
+  });
+
+  test('allows a linked specialist to assign a task until the parent removes the link', async () => {
+    const linkUrl = `/api/children/${childId}/specialists`;
+    const parentAuth = `Bearer ${tokenFor(parent)}`;
+    const specialistToken = tokenFor(specialist);
+    const linked = await request(app).post(linkUrl)
+      .set('Authorization', parentAuth)
+      .send({ email: 'specialist@example.test', specialist_type: 'Educator' });
+    expect(linked.status).toBe(201);
+
+    const created = await assign({
+      ...validTask, assigned_by: parent.id, status: 'Completed'
+    }, specialistToken);
+    expect(created.status).toBe(201);
+    expect(created.body.task).toMatchObject({
+      ...validTask, assigned_by: specialist.id, status: 'Not Started', completed_at: null
+    });
+    const parentList = await request(app).get(`/api/tasks?childId=${childId}`)
+      .set('Authorization', parentAuth);
+    expect(parentList.body.tasks).toEqual([created.body.task]);
+
+    const unlinked = await request(app).delete(`${linkUrl}/${specialist.id}`)
+      .set('Authorization', parentAuth).send({ confirmed: true });
+    expect(unlinked.status).toBe(204);
+
+    expect((await assign(validTask, specialistToken)).status).toBe(403);
+    expect(db.prepare('SELECT * FROM tasks').all()).toEqual([created.body.task]);
+  });
+
   test.each(['title', 'description', 'category', 'due_date'].flatMap(field =>
     [undefined, null, '', '   ', 123, [], {}].map(value => [field, value])
   ))('rejects incomplete %s (%j) and preserves existing tasks', async (field, value) => {
@@ -122,9 +191,10 @@ describe('Task assignment API', () => {
       .set('Authorization', `Bearer ${tokenFor(parent)}`)).status).toBe(403);
   });
 
-  test('returns the shared category list for an authenticated parent', async () => {
+  test.each(['parent', 'specialist'])('returns shared task categories for an authenticated %s', async role => {
+    const user = role === 'parent' ? parent : specialist;
     const response = await request(app).get('/api/tasks/categories')
-      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+      .set('Authorization', `Bearer ${tokenFor(user)}`);
     expect(response.status).toBe(200);
     expect(response.body.categories).toEqual(
       db.prepare('SELECT name FROM task_categories ORDER BY name').all().map(row => row.name)
@@ -134,7 +204,7 @@ describe('Task assignment API', () => {
   test('protects category access with the existing authentication and role policy', async () => {
     expect((await request(app).get('/api/tasks/categories')).status).toBe(401);
     expect((await request(app).get('/api/tasks/categories')
-      .set('Authorization', `Bearer ${tokenFor(specialist)}`)).status).toBe(403);
+      .set('Authorization', `Bearer ${tokenFor(childAccount)}`)).status).toBe(403);
   });
 
   test('assigns an owned child a task and derives identity and initial status on the server', async () => {

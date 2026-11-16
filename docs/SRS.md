@@ -231,3 +231,75 @@ The Dashboard interface provides parents with an overview of their child’s wee
 The Expert Inputs interface allows parents to view teachers’ feedback, specialists’ observations, and AI-generated suggestions about their child’s development. Entries are grouped by date and display their author, input type, content, and relevant categories. Filtering and sorting controls help parents locate specific entries, while an “Edited” label identifies entries modified after their initial submission.
 
 ---
+
+# Use Case Diagram
+
+```mermaid
+flowchart LR
+    Parent["👤 Parent"]
+    Specialist["👤 Specialist"]
+    Child["👤 Child"]
+
+    subgraph Lumi["Lumi — AI-Assisted Child Development Platform"]
+        direction TB
+        UC01(["Register Account"])
+        UC02(["Log In"])
+        UC03(["Create / View Child Profile"])
+        UC04(["Generate Child Login Code"])
+        UC05(["Link / Unlink Specialist"])
+        UC06(["View Linked Children"])
+        UC07(["View Weekly Schedule"])
+        UC08(["Assign Task"])
+        UC09(["View Tasks"])
+        UC10(["Update Task Status"])
+        UC11(["Create / Edit Observation"])
+        UC12(["View Observations"])
+        UC13(["Upload Document"])
+        UC14(["View / Download Documents"])
+        UC15(["Manage Document Access"])
+        UC16(["View Weekly Statistics"])
+        UC17(["Generate / View AI Summary"])
+        UC18(["Submit AI Feedback"])
+    end
+
+    Parent --- UC01
+    Parent --- UC02
+    Parent --- UC03
+    Parent --- UC04
+    Parent --- UC05
+    Parent --- UC07
+    Parent --- UC08
+    Parent --- UC09
+    Parent --- UC12
+    Parent --- UC13
+    Parent --- UC14
+    Parent --- UC15
+    Parent --- UC16
+    Parent --- UC17
+    Parent --- UC18
+
+    Specialist --- UC01
+    Specialist --- UC02
+    Specialist --- UC06
+    Specialist --- UC08
+    Specialist --- UC09
+    Specialist --- UC11
+    Specialist --- UC12
+    Specialist --- UC13
+    Specialist --- UC14
+    Specialist --- UC16
+    Specialist --- UC17
+    Specialist --- UC18
+
+    Child --- UC07
+    Child --- UC09
+    Child --- UC10
+
+    classDef actor fill:#ffffff,stroke:#374151,stroke-width:1.5px,color:#111827
+    classDef usecase fill:#f9fafb,stroke:#374151,stroke-width:1.2px,color:#111827
+
+    class Parent,Specialist,Child actor
+    class UC01,UC02,UC03,UC04,UC05,UC06,UC07,UC08,UC09,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18 usecase
+
+    style Lumi fill:#ffffff,stroke:#64748b,stroke-width:2px,color:#111827
+```
